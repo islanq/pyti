@@ -94,6 +94,38 @@ class Matrix:
       
       return Matrix(C)
 
+  def __mul__(self, other):
+    A = self.matrix
+    B = other.matrix if isinstance(other, Matrix) else other
+    
+    # Check if matrices can be multiplied
+    if len(A[0]) != len(B):
+        print("Matrices cannot be multiplied")
+        return None
+    
+    # Initialize the result matrix with zeros and an intermediate display matrix
+    C = [[0 for _ in range(len(B[0]))] for _ in range(len(A))]
+    display = [["" for _ in range(len(B[0]))] for _ in range(len(A))]
+    
+    for i in range(len(A)):
+        for j in range(len(B[0])):
+            for k in range(len(B)):
+                # Update the intermediate display matrix
+                if display[i][j]:
+                    display[i][j] += "+"
+                display[i][j] += "{}*{}".format(A[i][k], B[k][j])
+                C[i][j] += A[i][k] * B[k][j]
+    
+    # Format the display matrix for compact representation
+    compact_display = "[\n"
+    for row in display:
+        compact_display += "[ " + ", ".join(row) + "],\n"
+    compact_display += "]"
+    
+    print(compact_display)
+    
+    return Matrix(C)
+
   def __eq__(self, other):
       B = self.ensure_matrix_format(other)
       return self.matrix == B
