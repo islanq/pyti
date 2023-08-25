@@ -7,7 +7,7 @@ class Matrix:
     self.n = len(matrix[0])
   
   
-  def identity(n):
+  def identity(self, n):
     return Matrix([[1 if i == j else 0 for j in range(n)] for i in range(n)])
   
   def __len__(self):
@@ -121,12 +121,18 @@ class Matrix:
                 C[i][j] += A[i][k] * B[k][j]
     
     # Format the display matrix for compact representation
-    compact_display = "[\n"
-    for row in display:
-        compact_display += "[ " + ", ".join(row) + "],\n"
-    compact_display += "]"
-    
+    compact_display = "["
+    for i, v in enumerate(display):
+        spacer = "[ " if i == 0 else " [ "
+        compact_display += spacer + ", ".join(v) + " ],\n"
+    compact_display = compact_display.rstrip(",\n") + "]"
     print(compact_display)
+    # compact_display = "[\n"
+    # for row in display:
+    #     compact_display += "[ " + ", ".join(row) + "],\n"
+    # compact_display += "]"
+    
+    # print(compact_display)
     
     return Matrix(C)
 
