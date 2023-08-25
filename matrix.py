@@ -13,23 +13,24 @@ class Matrix:
   def __len__(self):
     return self.m
   
-  def __getitem__(self, i, j=None):
-    try:
-      if j is None:
-        return self.matrix[i]
-      else:
+  def __getitem__(self, indices):
+    # try:
+    #   if j is None:
+    #     return self.matrix[i]
+    #   else:
+    #     return self.matrix[i][j]
+    # except IndexError("Matrix index out of range"):
+    #   return None
+    if isinstance(indices, int):  # Single index provided
+        return self.matrix[indices]
+    elif isinstance(indices, tuple) and len(indices) == 2:  # Two indices provided
+        i, j = indices
         return self.matrix[i][j]
-    except IndexError("Matrix index out of range"):
-      return None
-    # if isinstance(indices, int):  # Single index provided
-    #     return self.matrix[indices]
-    # elif isinstance(indices, tuple) and len(indices) == 2:  # Two indices provided
-    #     return self.matrix[indices[0]][indices[1]]
-    # else:
-    #     raise IndexError("Matrix index out of range")
+    else:
+        raise IndexError("Matrix index out of range")
   
   def __str__(self):
-    return "[\n" + "\n".join([str(row) for row in self.matrix]) + "\n]"
+    return "[" + ",\n ".join(["[ " + ", ".join(map(str, row)) + " ]" for row in self.matrix]) + "]"
   
   @staticmethod
   def ensure_matrix_format(matrix_obj):
@@ -58,11 +59,13 @@ class Matrix:
               C[i][j] = A[i][j] + B[i][j]
       
       # Display the addition steps
-      compact_display = "[\n"
-      for row in display:
-          compact_display += "[ " + ", ".join(row) + " ],\n"
-      compact_display = compact_display.rstrip(",\n") + "\n]"
+      compact_display = "["
+      for i, v in enumerate(display):
+          spacer = "[ " if i == 0 else " [ "
+          compact_display += spacer + ", ".join(v) + " ],\n"
+      compact_display = compact_display.rstrip(",\n") + "]"
       print(compact_display)
+
       
       return Matrix(C)
 
@@ -86,10 +89,11 @@ class Matrix:
               C[i][j] = A[i][j] - B[i][j]
       
       # Display the subtraction steps
-      compact_display = "[\n"
-      for row in display:
-          compact_display += "[ " + ", ".join(row) + " ],\n"
-      compact_display = compact_display.rstrip(",\n") + "\n]"
+      compact_display = "["
+      for i, v in enumerate(display):
+          spacer = "[ " if i == 0 else " [ "
+          compact_display += spacer + ", ".join(v) + " ],\n"
+      compact_display = compact_display.rstrip(",\n") + "]"
       print(compact_display)
       
       return Matrix(C)
