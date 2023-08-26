@@ -14,13 +14,6 @@ class Matrix:
     return self.m
   
   def __getitem__(self, indices):
-    # try:
-    #   if j is None:
-    #     return self.matrix[i]
-    #   else:
-    #     return self.matrix[i][j]
-    # except IndexError("Matrix index out of range"):
-    #   return None
     if isinstance(indices, int):  # Single index provided
         return self.matrix[indices]
     elif isinstance(indices, tuple) and len(indices) == 2:  # Two indices provided
@@ -127,12 +120,6 @@ class Matrix:
         compact_display += spacer + ", ".join(v) + " ],\n"
     compact_display = compact_display.rstrip(",\n") + "]"
     print(compact_display)
-    # compact_display = "[\n"
-    # for row in display:
-    #     compact_display += "[ " + ", ".join(row) + "],\n"
-    # compact_display += "]"
-    
-    # print(compact_display)
     
     return Matrix(C)
 
@@ -273,7 +260,7 @@ class Matrix:
       print(self)
 
   def inverse(self):
-    if self.m != self.n:
+    if self.is_square:
         print("Matrix is not square. Cannot compute inverse.")
         return None
     
@@ -309,11 +296,12 @@ class Matrix:
     
     return True
 
+  @property
   def is_square(self):
     return self.m == self.n
   
   def is_symmetric(self):
-    if not self.is_square():
+    if not self.is_square:
       return False
     
     for i in range(self.m):
@@ -337,7 +325,7 @@ class Matrix:
     return pivots
 
   def determinant(self):
-    if not self.is_square():
+    if not self.is_square:
       return "Matrix must be square"
     
     if self.m == 1:
@@ -485,8 +473,6 @@ def parse_equation_systems(*args):
   return parsed_results
 
 def matrix_multiply_compact(A, B):
-  #A = A.matrix if isinstance(A, Matrix) else A
- # B = B.matrix if isinstance(B, Matrix) else B
   # Check if matrices can be multiplied
   if len(A[0]) != len(B):
     return "Matrices cannot be multiplied"
@@ -595,15 +581,13 @@ def gaussian_elimination(matrix, constants=None):
 def convert_to_matrix(s: str) -> list:
     # Handle the format without commas between lists
     s = s.replace("][", "],[")
-    
     # Handle the semicolon-separated format
     if not s.startswith("["):
         s = "[[" + s.replace(";", "],[") + "]]"
-    
     # Use eval to convert the string to a Python list of lists
     try:
+        # yeah it's evil, but we can't use json...
         matrix = eval(s)
     except:
         raise ValueError("Invalid format provided")
-    
     return matrix
