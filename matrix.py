@@ -1,4 +1,4 @@
-from matrix_format import FormatterTemplate
+from matrix_format import FormatterTemplate, decimal_to_frac_str
 from queue_print import PrintManager
 
 
@@ -13,7 +13,14 @@ class Matrix:
     self.has_aug_col = aug_col
     self.pm = PrintManager()
     self.template = FormatterTemplate()
-    
+  
+  @property
+  def rows(self):
+    return len(self.matrix)
+  
+  @property
+  def cols(self):
+    return len(self.matrix[0]) if self.m else 0
   
   def identity(self, n):
     return Matrix([[1 if i == j else 0 for j in range(n)] for i in range(n)])
@@ -32,7 +39,7 @@ class Matrix:
         self.matrix[indices] = value
   
   def __str__(self):
-    return self.template.format_matrix(self.matrix)
+   return (self.template.format_matrix(self.matrix))
   
   @staticmethod
   def ensure_matrix_format(matrix_obj):
@@ -66,7 +73,6 @@ class Matrix:
       compact_display = compact_display.rstrip(",\n") + "]"
       print(compact_display)
 
-      
       return Matrix(C)
 
   def __sub__(self, other):
@@ -143,12 +149,10 @@ class Matrix:
     if power < 0:
         inverse = self.inverse()
         if not inverse:
-            print("Matrix is singular. Cannot compute negative power.")
-            return None
+          print("Matrix is singular. Cannot compute negative power.")
+          return None
         return inverse ** (-power)
-
     return self.identity(self.m) if power == 0 else self * (self ** (power - 1))
-
 
   def __iter__(self):
     self.current_row, self.current_col = 0, 0
@@ -175,10 +179,8 @@ class Matrix:
     if self.m * self.n != m * n:
         print("Cannot reshape {}x{} matrix to {}x{} matrix.".format(self.m, self.n, m, n))
         return None
-
     flattened = [item for sublist in self.matrix for item in sublist]
     new_matrix = [[flattened[i * n + j] for j in range(n)] for i in range(m)]
-
     return Matrix(new_matrix)
 
   def transpose(self):
@@ -188,126 +190,54 @@ class Matrix:
         result[j][i] = self.matrix[i][j]
     
     return Matrix(result)
+
+  def determinant(self):
+    """
+    Compute the determinant of a matrix.
+    Uses recursion for matrices larger than 2x2.
+    """
+    if len(self.matrix) != len(self.matrix[0]):
+        raise ValueError("The matrix must be square.")
+    
+    if len(self.matrix) == 1:
+        return self.matrix[0][0]
+    
+    if len(self.matrix) == 2:
+        return self.matrix[0][0] * self.matrix[1][1] - self.matrix[0][1] * self.matrix[1][0]
+    
+    det = 0
+    for j in range(len(self.matrix)):
+        sub_matrix = Matrix(self.submatrix(0, j))
+        det += ((-1) ** j) * self.matrix[0][j] * self.determinant(sub_matrix)
+    return det
+
+  def cofactor(self, i, j):
+    """
+    Compute the cofactor of matrix at (i, j).
+    Uses determinant of submatrix obtained by removing row i and column j.
+    """
+    
+    sub_matrix = Matrix(self.submatrix(i, j))
+    return ((-1) ** (i + j)) * sub_matrix.determinant()
   
-  def is_ref(self):
-    """Checks if the matrix is in Row Echelon Form (REF)"""
-    leading_entry_col = -1
-    for row in self.matrix:
-        first_nonzero_col = next((index for index, entry in enumerate(row) if entry != 0), -1)
-        
-        # If the row is all zeros, continue to the next row
-        if first_nonzero_col == -1:
-            continue
-        
-        # Check if leading entry is to the right of the previous row's leading entry
-        if first_nonzero_col <= leading_entry_col:
-            return False
-        
-        leading_entry_col = first_nonzero_col
-        
-        # Check if all entries to the right of the leading entry are zeros
-        if any(row[first_nonzero_col+1:]):
-            return False
-    return True
-  
-  def is_rref(self):
-    """Checks if the matrix is in Reduced Row Echelon Form (RREF)"""
-    if not self.is_ref():
-        return False
-    for i, row in enumerate(self.matrix):
-        for j, entry in enumerate(row):
-            if entry == 1:  # This is a leading entry
-                # All other entries in the column should be zero
-                if any(row[:j]) or any(row[j+1:]) or any(row[j] for idx, row in enumerate(self.matrix) if idx != i):
-                    return False
-                break
-    return True
-
-  def to_ref(self, rref_caller=False):
-        if self.is_ref():
-          if not rref_caller:
-              print("Matrix is already in REF.")
-          return
-          
-        matrix = self.matrix
-        m, n = self.m, self.n
-
-        # Forward elimination to get Row Echelon Form
-        for i in range(m):
-            max_row = i
-            for k in range(i+1, m):
-                if abs(matrix[k][i]) > abs(matrix[max_row][i]):
-                    max_row = k
-            if max_row != i:
-                self._row_swap(i, max_row)
-
-            # Check for zero pivot
-            if matrix[i][i] == 0:
-                continue
-
-            # Normalize pivot row
-            pivot = matrix[i][i]
-            if pivot != 1:
-                self._row_divide(i, pivot)
-
-            # Eliminate other rows
-            for k in range(i+1, m):
-                factor = matrix[k][i]
-                if factor != 0:
-                    self._row_subtract(k, i, factor)
-        
-        if not rref_caller:
-          print("The matrix in Row Echelon Form (REF) is:")
-          self.pm.add_to_queue(self.template.format_matrix(self.matrix))  
-
-  def to_rref(self):
-      if self.is_rref:
-          print("Matrix is already in RREF.")
-          return
-        
-      matrix = self.matrix
-      m, n = self.m, self.n
-
-      # First convert to REF
-      self.to_ref(True)
-
-      # Backward elimination to get Reduced Row Echelon Form
-      for i in range(m - 1, -1, -1):
-          # Find the pivot column
-          pivot_col = None
-          for j in range(n):
-              if matrix[i][j] != 0:
-                  pivot_col = j
-                  break
-
-          # If no pivot column is found, move to next row
-          if pivot_col is None:
-              continue
-
-          # Eliminate entries above the pivot
-          for k in range(i - 1, -1, -1):
-              factor = matrix[k][pivot_col]
-              if factor != 0:
-                  self._row_subtract(k, i, factor)
-                  
-      print("The matrix in Reduced Row Echelon Form (RREF) is:")
-      self.pm.add_to_queue(self.template.format_matrix(self.matrix))
+  def matrix_of_cofactors(self):
+    """Compute the matrix of cofactors."""
+    return [[self.cofactor(i, j) for j in range(len(self.matrix))] for i in range(len(self.matrix))]
 
   def inverse(self):
-    if not self.is_square:
-        print("Matrix is not square. Cannot compute inverse.")
-        return None
-    # Create augmented matrix [A|I] and convert to RREF
-    identity_matrix = self.identity(self.m)
-    augmented_matrix = [row + identity_row for row, identity_row in zip(self.matrix, identity_matrix)]
-    augmented_matrix_obj = Matrix(augmented_matrix)
-    augmented_matrix_obj.to_rref()
-    # Check if the matrix is invertible
-    if not all(augmented_matrix_obj[i][i] == 1 for i in range(self.m)):
-        print("Matrix is singular (not invertible).")
-        return None
-    # Extract the inverse from the augmented matrix
-    return Matrix([row[self.n:] for row in augmented_matrix_obj.matrix])
+    """Compute the inverse of a matrix."""
+    det = self.determinant()
+    if det == 0:
+        raise ValueError("The matrix is singular and does not have an inverse.")
+    
+    cofactors = self.matrix_of_cofactors()
+    adjugate = Matrix(list(map(list, zip(*cofactors))))  # Transpose the matrix of cofactors
+    
+    # Using the row_div method to divide each row by the determinant
+    for i in range(len(adjugate.matrix)):
+        adjugate._row_divide(i, det)
+    
+    return adjugate.matrix
 
   def get_aug_column(self):
     return [row[-1] for row in self.matrix] if self.has_aug_col else None
@@ -328,7 +258,42 @@ class Matrix:
   def get_pivot_cols(self):
     return [col for row in range(self.m) for col in range(self.n) if self.matrix[row][col] == 1]
 
-  def determinant(self):
+  def determinant_verbose(self):
+    if self.rows != self.cols:
+        raise ValueError("Matrix is not square")
+    
+    # Create a copy of the matrix for manipulation
+    matrix_copy = [row.copy() for row in self.matrix]
+    m = Matrix(matrix_copy)
+    
+    det = 1  # Starting value for determinant
+    
+    for j in range(m.cols):
+        # Find a pivot (non-zero element) in column j and swap with current row if necessary
+        if m.matrix[j][j] == 0:
+            for i in range(j+1, m.rows):
+                if m.matrix[i][j] != 0:
+                    print(f"Swapping row {j} with row {i}")
+                    m._row_swap(i, j)
+                    det *= -1  # Swapping rows changes the sign of determinant
+                    break
+
+        # If no pivot is found, then determinant is zero
+        if m.matrix[j][j] == 0:
+            return 0
+
+        det *= m.matrix[j][j]  # Multiply det by the diagonal element
+
+        # Eliminate all entries below the pivot
+        for i in range(j+1, m.rows):
+            if m.matrix[i][j] != 0:
+                factor = m.matrix[i][j] / m.matrix[j][j]
+                print(f"Making zero at position {i},{j} by subtracting {factor:.2f} times row {j} from row {i}")
+                m._row_subtract(i, j, factor)
+    
+    return det
+
+  def determinant_old(self):
     if not self.is_square:
       return "Matrix must be square"
     
@@ -343,6 +308,106 @@ class Matrix:
       det += ((-1) ** j) * self.matrix[0][j] * self.submatrix(0, j).determinant()
     
     return det
+
+  def is_ref(self):
+    """Check if a matrix is in Row Echelon Form (REF)"""
+    last_leading_position = -1
+    for row in self.matrix:
+        leading_position = None
+        for j, entry in enumerate(row):
+            if entry != 0:
+                leading_position = j
+                # Check if leading entry is 1
+                if entry != 1:
+                    return False
+                # Check if leading entry is to the right of the last row's leading entry
+                if leading_position <= last_leading_position:
+                    return False
+                last_leading_position = leading_position
+                break
+    return True
+
+  def is_rref(self):
+    """Check if a matrix is in Reduced Row Echelon Form (RREF)"""
+    if not self.is_ref():
+        return False
+    for i, row in enumerate(self.matrix):
+        for j, entry in enumerate(row):
+            if entry == 1:  # This is a leading entry
+                # All other entries in the column should be zero
+                if any(self.matrix[k][j] for k in range(len(self.matrix)) if k != i):
+                    return False
+                break
+    return True
+    
+  def to_ref(self, rref_caller=False):
+    if self.is_ref():
+        if not rref_caller:
+            print("Matrix is already in REF.")
+        return
+    
+    matrix = self.matrix
+    m, n = self.m, self.n
+
+    # Forward elimination to get Row Echelon Form
+    for i in range(m):
+        max_row = i
+        for k in range(i+1, m):
+            if abs(matrix[k][i]) > abs(matrix[max_row][i]):
+                max_row = k
+        if max_row != i:
+            self._row_swap(i, max_row)
+
+        # Check for zero pivot
+        if matrix[i][i] == 0:
+            continue
+        # Normalize pivot row
+        pivot = matrix[i][i]
+        if pivot != 1:
+            self._row_divide(i, pivot)
+        # Eliminate other rows
+        for k in range(i+1, m):
+            factor = matrix[k][i]
+            if factor != 0:
+                self._row_subtract(k, i, factor)
+                
+    if not rref_caller:
+        print("The matrix in Row Echelon Form (REF) is:")
+        self.pm.add_to_queue(self.template.format_matrix(self.matrix))  
+
+  def to_rref(self):
+    """Refined method to manually convert the matrix to its Reduced Row Echelon Form (RREF)"""
+    matrix = self.matrix
+    m, n = len(matrix), len(matrix[0])
+    
+    lead = 0
+    for r in range(m):
+        if lead >= n:
+            break
+        i = r
+        while matrix[i][lead] == 0:
+            i += 1
+            if i == m:
+                i = r
+                lead += 1
+                if n == lead:
+                    lead -= 1
+                    break
+        matrix[i], matrix[r] = matrix[r], matrix[i]
+        lv = matrix[r][lead]
+        if lv == 0:
+            continue
+        #matrix[r] = [mrx / float(lv) for mrx in matrix[r]]
+        self._row_divide(r, lv)
+        for i in range(m):
+            if i != r:
+                lv = matrix[i][lead]
+                self._row_subtract(i, r, lv)
+                #matrix[i] = [iv - lv*rv for rv,iv in zip(matrix[r], matrix[i])]
+        lead += 1
+    self.matrix = matrix
+    self.pm.add_to_queue(self.template.format_matrix(self.matrix))
+    return self.matrix
 
   def gaussian_elimination(self):
       matrix = self.matrix
@@ -403,11 +468,6 @@ class Matrix:
       """Swap rows i and j of the matrix."""
       self.matrix[i], self.matrix[j] = self.matrix[j], self.matrix[i]
       print("R{} ↔ R{}".format(i+1, j+1))
-      return
-      if display:
-        operation_display = self.template.format_operation('swap', i, j)
-        matrix_display = self.template.format_matrix(self.matrix)
-        self.pm.add_to_queue(operation_display + "\n" + matrix_display)
 
   def _row_divide(self, i, val, display=True):
       """Divide row i by the value val."""
@@ -415,84 +475,30 @@ class Matrix:
         return
       
       self.matrix[i] = [self.matrix[i][j] / val for j in range(self.n)]
-      print("R{} ← R{} / {}".format(i+1, i+1, val))
-      print(" " + str(self.get_row(i)))
-      return
-
-      if display:
-        operation_display = self.template.format_operation('mul', i, val)
-        matrix_display = self.template.format_matrix(self.matrix)
-        self.pm.add_to_queue(operation_display + "\n" + matrix_display)
-        print("\n" + str(self.get_row(i+1)) + "\n")
+      print("R{} ← R{} / {}".format(i+1, i+1, decimal_to_frac_str(val)))
+      print(self.template.format_row(self.get_row(i)))
+      #print(" " + str(self.get_row(i)))
 
   def _row_multiply(self, i, val, display=True):
-      """Multiply row i by the value val."""
       self.matrix[i] = [self.matrix[i][j] * val for j in range(self.n)]
-      print("R{} ← R{} * {}".format(i+1, i+1, val))
-      return
-      if display:
-        operation_display = self.template.format_operation('div', i, val)
-        matrix_display = self.template.format_matrix(self.matrix)
-        self.pm.add_to_queue(operation_display + "\n" + matrix_display)
+      #self.pm.add_to_queue(self.template.format_operation('mul', i, i, value=val))
+      print("R{} ← R{} * {}".format(i+1, i+1, decimal_to_frac_str(val)))
+      print(self.template.format_row(self.get_row(i)))
+      #print(" " + str(self.get_row(i)))
       
   def _row_subtract(self, i, j, factor=1, display=True):
       """Subtract factor times row j from row i."""
       if factor is None:
         return
       self.matrix[i] = [self.matrix[i][k] - factor * self.matrix[j][k] for k in range(self.n)]
-      #for k in range(self.n):
-     #     self.matrix[i][k] -= factor * self.matrix[j][k]
-      print("R{} ← R{} - ({} * R{})".format(i+1, i+1, factor, j+1))
+      #self.pm.add_to_queue(self.template.format_operation('sub', i, i, factor))
+      print("R{} ← R{} - ({} * R{})".format(i+1, i+1, decimal_to_frac_str(factor), j+1))
       print(" " + str(self.get_row(i)))
-      return
-      
-      if display:
-        operation_display = self.template.format_operation('sub', i, j, factor)
-        matrix_display = self.template.format_matrix(self.matrix)
-        self.pm.add_to_queue(operation_display + "\n" + matrix_display)
         
-
   def _row_add(self, i, j, factor=1, display=True):
     """Add factor times row j to row i."""
     self.matrix[i] = [self.matrix[i][k] + factor * self.matrix[j][k] for k in range(self.n)]
-
-#    for k in range(self.n):
- #       self.matrix[i][k] += factor * self.matrix[j][k]
-    print("R{} ← R{} + ({} * R{})".format(i+1, i+1, factor, j+1))
-    return
-    if display:
-      operation_display = self.template.format_operation('add', i, j, factor)
-      matrix_display = self.template.format_matrix(self.matrix)
-      self.pm.add_to_queue(operation_display + "\n" + matrix_display)
-  
-  def solutions(self):
-    """Return the solutions to the system of equations."""
-    if not self.is_rref:
-      print("Matrix must be in RREF to compute solutions.")
-      return None
-    
-    # Check for no solution or multiple solutions
-    for i in range(self.m):
-      if all([cell == 0 for cell in self.matrix[i][:-1]]) and self.matrix[i][-1] != 0:
-        print("The system has no solution.")
-        return None
-      if all([cell == 0 for cell in self.matrix[i]]):
-        print("The system has infinitely many solutions.")
-        return None
-    
-    # Back-substitution to get the solution
-    x = [0 for _ in range(self.n)]
-    for i in range(self.m-1, -1, -1):
-      x[i] = self.matrix[i][-1]
-      for j in range(i+1, self.n):
-        x[i] -= self.matrix[i][j] * x[j]
-      print("Back substitution for x_{}".format(i+1))
-      print("x[{}] = {}".format(i+1, x[i]))
-    
-    return x
-      
-  # Row getter and setter methods
-  
+    print("R{} ← R{} + ({} * R{})".format(i+1, i+1, decimal_to_frac_str(factor), j+1))
 
   def get_row(self, i):
     if 0 <= i < self.m:
@@ -527,182 +533,74 @@ class Matrix:
   def submatrix(self, i, j):
     """Return the submatrix formed by deleting the ith row and jth column."""
     return Matrix([row[:j] + row[j+1:] for row in (self.matrix[:i]+self.matrix[i+1:])])
+  
+  def lu_factorization(self):
+      """
+      Compute the LU factorization of a matrix using the Matrix class methods.
+      """
+      n = len(self.matrix)
+      
+      # Initialize L as identity matrix and U as a copy of the original matrix
+      L = Matrix([[0]*n for _ in range(n)])
+      U = Matrix([row.copy() for row in self.matrix])
+      
+      for i in range(n):
+          L.matrix[i][i] = 1.0
 
+      for j in range(n):
+          # Update the values for U's upper triangle and L's lower triangle
+          for i in range(j+1, n):
+              if U.matrix[j][j] == 0:
+                  raise ValueError("LU decomposition is not possible as the matrix is singular.")
+              
+              factor = U.matrix[i][j] / U.matrix[j][j]
+              L.matrix[i][j] = factor
+              
+              # Subtract a multiple of row j from row i
+              U._row_subtract(i, j, factor)
+      
+      return L, U
+    
+  def forward_substitution(self, L, b):
+        """Solve Ly = b for y using forward substitution."""
+        n = len(self.matrix)
+        y = [0] * n
+        y[0] = b[0] / L.matrix[0][0]
+        for i in range(1, n):
+            y[i] = (b[i] - sum(L.matrix[i][j] * y[j] for j in range(i))) / L.matrix[i][i]
+        return y
+
+  def backward_substitution(self, U, y):
+      """Solve Ux = y for x using backward substitution."""
+      n = len(self.matrix)
+      x = [0] * n
+      x[-1] = y[-1] / U.matrix[-1][-1]
+      for i in range(n-2, -1, -1):
+          x[i] = (y[i] - sum(U.matrix[i][j] * x[j] for j in range(i+1, n))) / U.matrix[i][i]
+      return x
+
+  def solve_system(self, b):
+      # LU Factorization
+      L, U = self.lu_factorization()
+      
+      # Solve for y in Ly = b
+      y = self.forward_substitution(L, b)
+      
+      # Compute Ly for verification
+      Ly = [sum(L.matrix[i][j] * y[j] for j in range(3)) for i in range(3)]
+      
+      # Solve for x in Ux = y
+      x = self.backward_substitution(U, y)
+
+      # Compute Ux for verification
+      Ux = [sum(U.matrix[i][j] * x[j] for j in range(3)) for i in range(3)]
+
+      return L.matrix, U.matrix, Ly, Ux, x
   # TODO Implement a proper linear system solver that handles the cases where we need s and t
 
 def flatten(lst):
     """Flatten a list of lists into a single list."""
     return [item for sublist in lst for item in (flatten(sublist) if isinstance(sublist, list) else [sublist])]
-
-
-
-def parse_equation_systems(*args):
-  parsed_results = []
-  variables = []
-  
-  # Determine the source of equations
-  if isinstance(args[0], list) and isinstance(args[0][0], list):  # A list of lists
-      equations = [eq[0] for eq in args[0]]
-  else:
-      equations = args
-  
-  # Extract unique variables from all equations
-  for equation in equations:
-      # Remove multiplication symbol
-      equation = equation.replace("*", "")
-      
-      prev_char = ''
-      for char in equation:
-          if (97 <= ord(char) <= 122) and char not in variables:  # ASCII range for lowercase letters
-              # Check if previous character is not an alphabet (to handle functions like sin(x))
-              if not prev_char or not (97 <= ord(prev_char) <= 122):
-                  variables.append(char)
-          prev_char = char
-    # Helper function to extract coefficient
-  def extract_coefficient(term, var):
-      term = term.replace("−", "-")  # Replace the special minus with the regular one
-      if term == var:  # e.g. x
-          return 1
-      elif term == "-" + var:  # e.g. -x
-          return -1
-      elif term == "+" + var:  # e.g. +x
-          return 1
-      else:  # e.g. 2x or -2x
-          term_val = term.replace(var, "").strip()
-          return int(term_val) if term_val not in ["+", "-"] else (1 if term_val == "+" else -1)
-  
-  for equation in equations:
-      equation = equation.replace("−", "-").replace("*", "")  # Replace special minus sign and multiplication symbol
-      
-      # Split equation to separate LHS and RHS
-      lhs, rhs = equation.split("=")
-      
-      # Use a list comprehension combined with join to split terms better
-      terms = ''.join([' ' + i if i in ['+', '-'] else i for i in lhs]).split()
-      const = int(rhs.strip())  # Get the constant
-      
-      # Initialize coefficients as 0 for all variables
-      coeffs = [0 for _ in variables]
-      
-      for term in terms:
-          for var in variables:
-              if var in term:
-                  idx = variables.index(var)
-                  coeffs[idx] += extract_coefficient(term, var)
-                  
-      coeffs.append(const)                
-      parsed_results.append(coeffs)
-  
-  return parsed_results
-
-def matrix_multiply_compact(A, B):
-  # Check if matrices can be multiplied
-  if len(A[0]) != len(B):
-    return "Matrices cannot be multiplied"
-  
-  # Initialize the result matrix with zeros and an intermediate display matrix
-  C = [[0 for _ in range(len(B[0]))] for _ in range(len(A))]
-  display = [["" for _ in range(len(B[0]))] for _ in range(len(A))]
-  
-  for i in range(len(A)):
-    for j in range(len(B[0])):
-      for k in range(len(B)):
-      # Update the intermediate display matrix
-        if display[i][j]:
-          display[i][j] += "+"
-        display[i][j] += "{}*{}".format(A[i][k], B[k][j])
-        C[i][j] += A[i][k] * B[k][j]
-  
-  # Format the display matrix for compact representation
-  compact_display = "[\n"
-  for row in display:
-    compact_display += "[ " + ", ".join(row) + "],\n"
-  compact_display += "]"
-  
-  print(compact_display)
-  
-  return C
-
-def gaussian_elimination(matrix, constants=None):
-    m = len(matrix)
-    
-    # Check if constants are provided or if augmented matrix is given
-    if isinstance(constants, bool) and constants == True:
-        n = len(matrix[0]) - 1
-    elif isinstance(constants, list):
-        n = len(matrix[0])
-        for i in range(m):
-            matrix[i].append(constants[i])
-    else:
-        user_input = input("Is the augmented part included in the matrix (yes/no)? ").strip().lower()
-        if user_input == "yes":
-            n = len(matrix[0]) - 1
-        elif user_input == "no":
-            print("Please provide the matrix in the augmented form.")
-            return None
-        else:
-            print("Invalid input. Please provide either 'yes' or 'no'.")
-            return None
-  
-    def print_matrix(matrix):
-        for row in matrix:
-            formatted_row = " | ".join("{:6.2f}".format(x) for x in row)
-            print(formatted_row)
-        print('-' * len(formatted_row) + 2*'-')
-  
-    for i in range(m):
-        # Find pivot element and swap rows if necessary
-        max_val = abs(matrix[i][i])
-        max_row = i
-        for k in range(i+1, m):
-            if abs(matrix[k][i]) > max_val:
-                max_val = abs(matrix[k][i])
-                max_row = k
-        if i != max_row:
-            matrix[i], matrix[max_row] = matrix[max_row], matrix[i]
-            print("r{}↔r{}".format(i+1, max_row+1))
-            print_matrix(matrix)
-        
-        # Check for zero pivot, which indicates possible multiple solutions or no solution
-        if matrix[i][i] == 0:
-            break
-
-        # Normalize pivot row
-        pivot = matrix[i][i]
-        for j in range(n+1):
-            matrix[i][j] /= pivot
-        print("R{} = R{}/{}".format(i+1, i+1, pivot))
-        print_matrix(matrix)
-
-        # Eliminate other rows
-        for k in range(i+1, m):
-            factor = matrix[k][i]
-            print("R{} = R{}-R{}*{}".format(k+1, k+1, i+1, factor))
-            for j in range(n+1):
-                matrix[k][j] -= factor * matrix[i][j]
-            print_matrix(matrix)
-
-    # Check for no solution or multiple solutions
-    for i in range(m):
-        if all([cell == 0 for cell in matrix[i][:-1]]) and matrix[i][-1] != 0:
-            print("The system has no solution.")
-            return None
-        if all([cell == 0 for cell in matrix[i]]):
-            print("The system has infinitely many solutions.")
-            return None
-
-    # Back-substitution to get the solution
-    x = [0 for _ in range(n)]
-    for i in range(m-1, -1, -1):
-        x[i] = matrix[i][-1]
-        for j in range(i+1, n):
-            x[i] -= matrix[i][j] * x[j]
-        print("Back substitution for x_{}".format(i+1))
-        print("x[{}] = {}".format(i+1, x[i]))
-
-    return x
-
-
 
 def convert_to_matrix(s: str) -> list:
     # Handle the format without commas between lists
@@ -718,3 +616,15 @@ def convert_to_matrix(s: str) -> list:
         raise ValueError("Invalid format provided")
     return matrix
   
+  
+A = Matrix([
+  [1,3,-4],
+  [1,0,-3],
+  [-1, -15, 11]])
+
+L, U, Ly, Ux, x = A.solve_system([3,1,-8])
+print("L = " + str(L))
+print("U = " + str(U))
+print("Ly = " + str(Ly))
+print("Ux = " + str(Ux))
+print("x = " + str(x))
