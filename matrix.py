@@ -258,6 +258,29 @@ class Matrix:
   def get_pivot_cols(self):
     return [col for row in range(self.m) for col in range(self.n) if self.matrix[row][col] == 1]
 
+
+  def is_upper_triangular(self):
+        """
+        Check if the matrix is upper triangular.
+        """
+        for i in range(1, self.rows):
+            for j in range(0, min(i, self.cols)):
+                if self.matrix[i][j] != 0:
+                    return False
+        return True
+
+  def upper_triangular_determinant(self):
+      """
+      Calculate the determinant of an upper triangular matrix.
+      """
+      if not self.is_upper_triangular():
+          raise ValueError("Matrix is not upper triangular.")
+      
+      determinant = 1
+      for i in range(self.rows):
+          determinant *= self.matrix[i][i]
+      return determinant
+
   def determinant_verbose(self):
     if self.rows != self.cols:
         raise ValueError("Matrix is not square")
@@ -580,6 +603,22 @@ class Matrix:
       return x
 
   def solve_system(self, b):
+      ''' USAGE:
+        A = Matrix([
+          [1,3,-4],
+          [1,0,-3],
+          [-1, -15, 11]])
+
+        L, U, Ly, Ux, x = A.solve_system([3,1,-8])
+        print("L = " + str(L))
+        print("U = " + str(U))
+        print("Ly = " + str(Ly))
+        print("Ux = " + str(Ux))
+        print("x = " + str(x))
+      '''
+    
+    
+    
       # LU Factorization
       L, U = self.lu_factorization()
       
@@ -615,16 +654,3 @@ def convert_to_matrix(s: str) -> list:
     except:
         raise ValueError("Invalid format provided")
     return matrix
-  
-  
-A = Matrix([
-  [1,3,-4],
-  [1,0,-3],
-  [-1, -15, 11]])
-
-L, U, Ly, Ux, x = A.solve_system([3,1,-8])
-print("L = " + str(L))
-print("U = " + str(U))
-print("Ly = " + str(Ly))
-print("Ux = " + str(Ux))
-print("x = " + str(x))
