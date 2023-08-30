@@ -1,4 +1,15 @@
 import os
+import re
+
+def is_fstring(string):
+    pattern = re.compile(r'^f[\'\"].*?[\'\"]$')
+    return bool(pattern.search(string))
+
+def write_output(output_file_path, lines):
+    
+    with open(output_file_path, 'w', encoding='utf-8') as outfile:
+        outfile.writelines(lines)
+
 def adjust_python_indentation(input_filename, desired_indent=4, outdir=None):
     
     output_directory = outdir if outdir else './ti_converted'
@@ -11,6 +22,9 @@ def adjust_python_indentation(input_filename, desired_indent=4, outdir=None):
 
     with open(input_filename, 'r', encoding='utf-8') as infile:
         lines = infile.readlines()
+
+    if is_fstring('\n'.join(lines)):
+        raise ValueError("Input file contains f-strings: " + input_filename)
 
     fixed_lines = []
     indent_stack = [0]  # Stack to keep track of indents for each scope
@@ -41,4 +55,19 @@ def adjust_python_indentation(input_filename, desired_indent=4, outdir=None):
     
     return output_filename
 
-adjust_python_indentation('shunting_yard.py', 2)
+def merge_python_files(file_paths, out_name, outdir=None):
+    
+    outdir = outdir if outdir else './merged'
+    if not os.path.exists(outdir):
+        os.makedirs(outdir, exist_ok=True)
+    
+    with open(f'{outdir}/merged_{out_name}', 'w') as output_file:
+        for file_path in file_paths:
+            with open(file_path, 'r') as input_file:
+                content = input_file.read()
+                output_file.write(f"# Merged content from {file_path}\n")
+                output_file.write(content)
+                output_file.write("\n\n")
+
+#adjust_python_indentation('math_parse.py', 2)
+merge_python_files(['./math_parsing.py', './math_symbolic.py'], 'symbolic.py')
