@@ -1,7 +1,10 @@
-is_digit = lambda s: all(48 <= ord(c) <= 57 for c in s)
-is_numeric = lambda s: all(48 <= ord(c) <= 57 or ord(c) == 46 for c in s)
-is_alpha = lambda s: all(65 <= ord(c) <= 90 or 97 <= ord(c) <= 122 for c in s)
-is_alnum = lambda s: is_alpha(s) or is_digit(s) or is_numeric(s)
+import sys
+if sys.platform == 'win32':
+    from ti_polyfill.polyfill import *
+elif sys.platform == 'TI-Nspire':
+    from polyfill import *
+
+
 import re
 # we must 
 # 0 -- optional format expression
@@ -26,7 +29,6 @@ def tokenize(expr):
         tokens.append(current_token)
     return tokens
 
-# removing named variables
 def parse_tokens(infix_tokens, known_variables=None):
     # Shunting Yard algorithm with unary operators
     output_queue = []
@@ -44,8 +46,8 @@ def parse_tokens(infix_tokens, known_variables=None):
             if can_be_unary and token == '-':  # Handle unary minus
                 operator_stack.append('u-')  # Use a different symbol to distinguish unary minus
             else:
-                while (operator_stack and 
-                       (precedence.get(token, 0) < precedence.get(operator_stack[-1], 0) or 
+                while (operator_stack and  \
+                       (precedence.get(token, 0) < precedence.get(operator_stack[-1], 0) or \
                        (token not in right_associative and precedence.get(token, 0) == precedence.get(operator_stack[-1], 0)))):
                     output_queue.append(operator_stack.pop())
                 operator_stack.append(token)
@@ -184,9 +186,17 @@ def parse_variables(expression, named_vars=None):
     return list(unique_variables)
 
 
+# expression = '2x + y^2'
+# print(format_expression(expression))
+# print(parse_expression(expression))
+# print(parse_expression(expression + ' = 3'))
+# print(parse_variables(expression))
 
 
-
+# print(parse_tokens(tokenize(format_expression('2x + y = 3'))))
+# print(parse_variables(expression))
+# print(expression)
+#print(variables)
 
 
 # '-(19+ab)+2a',
@@ -207,3 +217,4 @@ def parse_variables(expression, named_vars=None):
     #print('parsed   ', parsed)
     #print('evaluated', evaluated)
     #print("\n")
+
