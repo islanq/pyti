@@ -47,8 +47,7 @@ class TiReadWriteException(Exception):
         self.message = message
         super().__init__(message)
 
-class Interoperability:
-    
+class Interop:
     
     def save_ti_var(name, value):
         try:
@@ -62,12 +61,35 @@ class Interoperability:
         except TiReadWriteException as e:
             print("error loading variable: {}".format(e.message))
     
+    @staticmethod
     def is_ti_list(ti_list_str):
-        return ti_list_str.startswith('{') and ti_list_str.endswith('}')
+        if not ti_list_str.startswith('{') and ti_list_str.endswith('}'):
+            return False
+        return all(s not in ti_list_str for s in [', ', ':'])
     
+    @staticmethod
     def is_ti_mat(ti_mat_str):
-        return all(s in ti_mat_str for s in ['][','[[' , ']]'])
+        # ti mat will never contain ', ' or ':'
+        if not ti_mat_str.startswith('[['):
+            return False
+        if not ti_mat_str.endswith(']]'):
+            return False
+        return all(s not in ti_mat_str for s in [', ', ':'])
+       
+    @staticmethod
+    def is_py_list(py_list):
+        return isinstance(py_list, list)
     
+    @staticmethod
+    def is_py_mat(py_list_of_list):
+        # Ensure that it's a list of lists and that all lists have the same length
+        if not isinstance(py_list_of_list, list):
+            return False
+        if not all(isinstance(row, list) for row in py_list_of_list):
+            return False
+        return all(len(row) == len(py_list_of_list[0]) for row in py_list_of_list)
+    
+    @staticmethod
     def is_ti_or_py_mat(mat_str):
         return mat_str.startswith('[[') and mat_str.endswith(']]') and not ', ' in mat_str and not '][' in mat_str
     
@@ -77,44 +99,40 @@ class Interoperability:
     
     @staticmethod
     def to_ti_mat(py_list_of_list):
-        return "[" + "".join(map(lambda row: Interoperability.to_ti_list(row).replace('{', '[').replace('}', ']'), py_list_of_list)) + "]"
+        return "[" + "".join(map(lambda row: Interop.to_ti_list(row).replace('{', '[').replace('}', ']'), py_list_of_list)) + "]"
     
     @staticmethod
     def to_py_list(ti_list_str):
-        if ti_list_str.startswith('{') and ti_list_str.endswith('}') and ':' not in ti_list_str:
+        if isinstance(ti_list_str, list):
+            return ti_list_str
+        if Interop.is_ti_list(ti_list_str): #ti_list_str.startswith('{') and ti_list_str.endswith('}') and ':' not in ti_list_str:
             return [float(x.replace("−", "-")) if is_numeric(x) else int(x.replace("−", "-")) if is_digit(x) else x.strip() for x in ti_list_str[1:-1].split(",")]
 
     @staticmethod
     def to_py_mat(ti_mat_str):
-        if all(s in ti_mat_str for s in ['][','[[' , ']]']) and ti_mat_str.startswith('[[') and ti_mat_str.endswith(']]'):
+        if isinstance(ti_mat_str, list):
+            return ti_mat_str
+        if not Interop.is_ti_mat(ti_mat_str):
+            raise ValueError("Invalid ti matrix string: {}".format(ti_mat_str))
+        if '][' in ti_mat_str:
+            ti_mat_str = ti_mat_str[2:-2]
+            return [[float(x.replace("−", "-")) if is_numeric(x) else int(x.replace("−", "-")) if is_digit(x) else x.strip() for x in ti_mat_str.split(",")]]
+        else:
             return [[float(x.replace("−", "-")) if is_numeric(x) else int(x.replace("−", "-")) if is_digit(x) else x.strip() for x in row.split(",")] for row in ti_mat_str[2:-2].split("][")]
 
+    @staticmethod
+    def is_col_vec(matrix):
+        if isinstance(matrix, list):
+            return all(isinstance(row, list) and len(row) == 1 for row in matrix)
+        elif isinstance(matrix, str) and Interop.is_ti_mat(matrix):
+            return Interop.is_col_vec(Interop.to_py_mat(matrix))
+        return False
+            
+    @staticmethod
+    def is_row_vec(matrix):
+        if isinstance(matrix, list):
+            return len(matrix) == 1
+        elif isinstance(matrix, str) and Interop.is_ti_mat(matrix):
+            return Interop.is_row_vec(Interop.to_py_mat(matrix))
+        return False
     
-"""        
-    @staticmethod
-    def to_py_list(ti_list_str):
-        if ti_list_str.startswith('{') and ti_list_str.endswith('}') and ':' not in ti_list_str:
-            return [float(x) if is_numeric(x.replace(".", "")) else x.strip() for x in ti_list_str[1:-1].split(",")]
-
-    @staticmethod
-    def to_py_mat(ti_mat_str):
-        if all(s in ti_mat_str for s in ['][','[[' , ']]']) and ti_mat_str.startswith('[[') and ti_mat_str.endswith(']]'):
-            return [[float(x) if is_numeric(x.replace(".", "")) else x.strip() for x in row.split(",")] for row in ti_mat_str[2:-2].split("][")]"""
-        
-
-        
-
-
-print(Interoperability.to_ti_list([1,2,-3,4, 'x']))
-print(Interoperability.to_ti_mat([[1,2,3,-4],[1,'h',3,4]]))
-
-print(Interoperability.to_py_list("{1,2,3,4,1,h,3,4}"))
-print(Interoperability.to_py_mat("[[1,-2,3,4][1,h,3,4]]"))
-# print(Interoperability.is_ti_mat("[[1,2,3,4][1,h,3,4]]"))
-# print(Interoperability.is_py_mat("[[1,2,3,4][1,h,3,4]]"))
-
-
-
-
-
-
