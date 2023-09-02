@@ -5,7 +5,6 @@ elif sys.platform == 'TI-Nspire':
     from polyfill import *
 
 
-import re
 # we must 
 # 0 -- optional format expression
 # 1. tokenize the expression
@@ -184,37 +183,3 @@ def parse_variables(expression, named_vars=None):
             unique_variables.add(chunk)
             
     return list(unique_variables)
-
-
-# expression = '2x + y^2'
-# print(format_expression(expression))
-# print(parse_expression(expression))
-# print(parse_expression(expression + ' = 3'))
-# print(parse_variables(expression))
-
-
-# print(parse_tokens(tokenize(format_expression('2x + y = 3'))))
-# print(parse_variables(expression))
-# print(expression)
-#print(variables)
-
-
-# '-(19+ab)+2a',
-# '-(19+ab)+2a*jab',
-# "(-(2-a)+8d^2)",
-# "-(2a)+8d^2+_unnamed_var*_my_var_",
-# "-(2a)+8d^2+_var_",
-# "-(2a)+8d^2 unnamed_var",
-# "( a+b ) * ( c + d^2 ) + 1.23"]
-# for expr in expressions:
-#     formatted = format_expression(expr)
-#     tokenized = tokenize(formatted)
-#     parsed = parse_tokens(tokenized)
-#     evaluated = evaluate(parsed)
-#     print("parsed variables: ", parse_variables(formatted, ["ab"]))
-    #print('formatted', formatted)
-    #print('tokenized', tokenized)
-    #print('parsed   ', parsed)
-    #print('evaluated', evaluated)
-    #print("\n")
-
