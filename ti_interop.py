@@ -99,34 +99,40 @@ class TiInterop:
        
     @staticmethod
     def is_ti_row_vec(ti_mat_str):
+        
         return TiInterop.is_ti_mat(ti_mat_str) and not '][' in ti_mat_str 
     
     @staticmethod
     def is_ti_col_vec(ti_mat_str):
-        return TiInterop.is_ti_mat(ti_mat_str) and '][' in ti_mat_str  
+        if not (TiInterop.is_ti_mat(ti_mat_str) and '][' in ti_mat_str):
+            return False
+        return TiInterop.is_py_col_vec(TiInterop.to_py_mat(ti_mat_str))
        
     @staticmethod
     def is_py_list(py_list):
         return isinstance(py_list, list)
     
     @staticmethod
-    def is_py_mat(py_list_of_list):
-        # Ensure that it's a list of lists and that all lists have the same length
-        if not isinstance(py_list_of_list, list):
+    def is_py_mat(py_list):
+        if not isinstance(py_list, list): # it's not a list
             return False
-        if len(py_list_of_list) == 0:
+        if len(py_list) == 0: # it contains no rows, therefore not a matrix
             return False
-        if not all(isinstance(row, list) for row in py_list_of_list):
+        if not all(isinstance(row, list) for row in py_list): # all list rows
             return False
-        return all(len(row) == len(py_list_of_list[0]) for row in py_list_of_list)
+        return all(len(row) == len(py_list[0]) for row in py_list) # all rows == len
     
     @staticmethod
     def to_ti_list(py_list):
+        if TiInterop.is_ti_list(py_list):
+            return py_list
         return "{" + ",".join(map(str, py_list)) + "}"
     
     @staticmethod
-    def to_ti_mat(py_list_of_list):
-        return "[" + "".join(map(lambda row: TiInterop.to_ti_list(row).replace('{', '[').replace('}', ']'), py_list_of_list)) + "]"
+    def to_ti_mat(py_list):
+        if TiInterop.is_ti_mat(py_list):
+            return py_list
+        return "[" + "".join(map(lambda row: TiInterop.to_ti_list(row).replace('{', '[').replace('}', ']'), py_list)) + "]"
     
     @staticmethod
     def to_py_list(ti_list_str):
@@ -137,7 +143,9 @@ class TiInterop:
 
     @staticmethod
     def is_reg_py_list(py_list):
-        return isinstance(py_list, list) and not all(isinstance(item, list) for item in py_list)
+        if not isinstance(py_list, list):
+            return False
+        return not all(isinstance(item, list) for item in py_list)
     
     @staticmethod
     def to_py_mat(ti_mat_str):
