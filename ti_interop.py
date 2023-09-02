@@ -61,6 +61,12 @@ class Interop:
         except TiReadWriteException as e:
             print("error loading variable: {}".format(e.message))
     
+    def exec(cmd_str):
+        try:
+            return readST('expr("{}")'.format(cmd_str))
+        except:
+            pass
+    
     @staticmethod
     def is_ti_list(ti_list_str):
         if not ti_list_str.startswith('{') and ti_list_str.endswith('}'):
@@ -114,7 +120,7 @@ class Interop:
             return ti_mat_str
         if not Interop.is_ti_mat(ti_mat_str):
             raise ValueError("Invalid ti matrix string: {}".format(ti_mat_str))
-        if '][' in ti_mat_str:
+        if not '][' in ti_mat_str:
             ti_mat_str = ti_mat_str[2:-2]
             return [[float(x.replace("−", "-")) if is_numeric(x) else int(x.replace("−", "-")) if is_digit(x) else x.strip() for x in ti_mat_str.split(",")]]
         else:

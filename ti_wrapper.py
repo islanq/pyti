@@ -161,6 +161,9 @@ class TiWrapper(Interop):
         result_str = call_func("mRowAdd", str(expr) + "," + ti_matrix + "," + str(mulexpr_row) + "," + str(update_row_idx))
         return Interop.to_py_mat(result_str)
    
+   
+       
+       
     
     def identity(self, size: int): # working
         """
