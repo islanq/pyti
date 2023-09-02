@@ -1,6 +1,6 @@
 import sys
 if sys.platform == 'TI-Nspire':
-    from inter import Interoperability
+    from inter import Interop
     from eval_expr import eval_expr, call_func
 else:
     from ti_interop import Interop
