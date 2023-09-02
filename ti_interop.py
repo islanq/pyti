@@ -7,41 +7,6 @@ elif sys.platform == 'TI-Nspire':
     from polyfill import is_numeric, is_digit
     from ti_system import readST, writeST
     from eval_expr import eval_expr, call_func
-    
-
-""" ti_system -----------------
-    'clear',
-    'clear_history',
-    'clock',
-    'disp_clr',
-    'escape',
-    'evalFunc',
-    'eval_function',
-    'floor',
-    'getKey',
-    'get_key',
-    'get_mouse',
-    'get_platform',
-    'get_screen_dim',
-    'get_time_ms',
-    'get_use_buffer',
-    'getmouse',
-    'isFloat',
-    'readST',
-    'readSTLst',
-    'readSTNum',
-    'recall_list',
-    'recall_value',
-    'sleep_ms',
-    'store_list'
-    'store_value',
-    'string_size',
-    'ticks_ms',
-    'use_buffer',
-    'wait',
-    'writeST',
-    'writeSTLst'
-"""
 
 class TiReadWriteException(Exception):
     def __init__(self, message):
@@ -62,19 +27,19 @@ class TiInterop:
         except TiReadWriteException as e:
             print("error loading variable: {}".format(e.message))
     
-    def exec(self, cmd_str, *args):
+    def exec(self, cmd_str_or_func_name, *args):
         if len(args) > 0:
             try:
-                return call_func(cmd_str, *args)
+                return call_func(cmd_str_or_func_name, *args)
             except:
                 pass
         try:
-            return eval_expr(cmd_str)
+            return eval_expr(cmd_str_or_func_name)
         except:
             pass
         
         try:
-            return readST('expr("{}")'.format(cmd_str))
+            return readST('expr("{}")'.format(cmd_str_or_func_name))
         except:
             pass
 
