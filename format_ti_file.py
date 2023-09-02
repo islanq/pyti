@@ -13,7 +13,8 @@ def write_output(output_file_path, lines):
 def adjust_python_indentation(input_filename, desired_indent=4, outdir=None):
     
     output_directory = outdir if outdir else './ti_converted'
-    output_filename = os.path.join(output_directory, "ti_" + os.path.basename(input_filename)).replace('\\', '/')
+    output_prefix = "ti_" if not "ti_" in input_filename else ""
+    output_filename = os.path.join(output_directory, output_prefix + os.path.basename(input_filename)).replace('\\', '/')
     
     if not os.path.exists(input_filename):
         raise FileNotFoundError("Input file does not exist: " + input_filename)
@@ -61,13 +62,13 @@ def merge_python_files(file_paths, out_name, outdir=None):
     if not os.path.exists(outdir):
         os.makedirs(outdir, exist_ok=True)
     
-    with open(f'{outdir}/merged_{out_name}', 'w') as output_file:
+    with open(f'{outdir}/merged_{out_name}', 'w', encoding='utf-8') as output_file:
         for file_path in file_paths:
-            with open(file_path, 'r') as input_file:
+            with open(file_path, 'r', encoding='utf-8') as input_file:
                 content = input_file.read()
                 output_file.write(f"# Merged content from {file_path}\n")
                 output_file.write(content)
                 output_file.write("\n\n")
 
-#adjust_python_indentation('math_parse.py', 2)
-merge_python_files(['./math_parsing.py', './math_symbolic.py'], 'symbolic.py')
+adjust_python_indentation('./ti_interop.py', 2)
+#merge_python_files(['./matrix.py', './queue_print.py', './matrix_format.py'], 'matrix.py')
