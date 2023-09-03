@@ -1,7 +1,7 @@
 import sys
 if sys.platform == 'win32':
-    from ti_numbers.frac import Frac
-    from ti_polyfill.polyfill import is_numeric, is_digit
+    from lib.frac import Frac
+    from lib.ti_polyfill import is_numeric, is_digit
 elif sys.platform == 'TI-Nspire':
     from frac import Frac
     from polyfill import is_numeric, is_digit
@@ -28,20 +28,7 @@ class TiInterop:
             print("error loading variable: {}".format(e.message))
     
     def exec(self, cmd_str_or_func_name, *args):
-        if len(args) > 0:
-            try:
-                return call_func(cmd_str_or_func_name, *args)
-            except:
-                pass
-        try:
-            return eval_expr(cmd_str_or_func_name)
-        except:
-            pass
-        
-        try:
-            return readST('expr("{}")'.format(cmd_str_or_func_name))
-        except:
-            pass
+        return exec(cmd_str_or_func_name, *args)
 
     @staticmethod
     def is_ti_list(ti_list_str):
@@ -188,3 +175,22 @@ class TiInterop:
         else:
             lhs, rhs = expression.split("=", 1)
         return not (lhs.strip() == "" and rhs.strip() == "")
+
+def exec(cmd_str_or_func_name, *args):
+    if len(args) > 0:
+        try:
+            return call_func(cmd_str_or_func_name, *args)
+        except:
+            pass
+    try:
+        return eval_expr(cmd_str_or_func_name)
+    except:
+        pass
+    try:
+        return readST(cmd_str_or_func_name)
+    except:
+        pass
+    try:
+        return readST('expr("{}")'.format(cmd_str_or_func_name))
+    except:
+        pass
