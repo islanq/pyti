@@ -14,7 +14,7 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+#lib/
 lib64/
 parts/
 sdist/
@@ -161,3 +161,7 @@ cython_debug/
 ti_converted/
 merged/
 section*.ipynb
+tests/
+format_ti_file.py
+format_ti_file.py
+old/
