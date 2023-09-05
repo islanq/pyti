@@ -15,6 +15,14 @@ class TiReadWriteException(Exception):
 
 class TiInterop:
     
+    def __init__(self):
+        for method_name in dir(TiInterop):
+            method = getattr(TiInterop, method_name)
+            if callable(method) and isinstance(method, staticmethod):
+                method = method.__func__  # Get the actual function
+                setattr(self, method_name, method.__get__(self))
+        
+    
     def save_ti_var(name, value):
         try: 
             writeST(name, value)
@@ -31,7 +39,7 @@ class TiInterop:
         return exec(cmd_str_or_func_name, *args)
 
     @staticmethod
-    def is_ti_list(ti_list_str):
+    def is_ti_list(ti_list_str) -> bool:
         if not isinstance(ti_list_str, str):
             return False
         if not (ti_list_str.startswith('{') and ti_list_str.endswith('}')):
@@ -39,7 +47,7 @@ class TiInterop:
         return all(s not in ti_list_str for s in [', ', ':'])
     
     @staticmethod
-    def is_ti_mat(ti_mat_str):
+    def is_ti_mat(ti_mat_str) -> bool:
         # ti mat will never contain ', ' or ':'
         if not isinstance(ti_mat_str, str):
             return False
@@ -50,22 +58,21 @@ class TiInterop:
         return all(s not in ti_mat_str for s in [', ', ':'])
        
     @staticmethod
-    def is_ti_row_vec(ti_mat_str):
-        
+    def is_ti_row_vec(ti_mat_str) -> bool:
         return TiInterop.is_ti_mat(ti_mat_str) and not '][' in ti_mat_str 
     
     @staticmethod
-    def is_ti_col_vec(ti_mat_str):
+    def is_ti_col_vec(ti_mat_str) -> bool:
         if not (TiInterop.is_ti_mat(ti_mat_str) and '][' in ti_mat_str):
             return False
         return TiInterop.is_py_col_vec(TiInterop.to_py_mat(ti_mat_str))
        
     @staticmethod
-    def is_py_list(py_list):
+    def is_py_list(py_list) -> bool:
         return isinstance(py_list, list)
     
     @staticmethod
-    def is_py_mat(py_list):
+    def is_py_mat(py_list) -> bool:
         if not isinstance(py_list, list): # it's not a list
             return False
         if len(py_list) == 0: # it contains no rows, therefore not a matrix
@@ -75,26 +82,26 @@ class TiInterop:
         return all(len(row) == len(py_list[0]) for row in py_list) # all rows == len
     
     @staticmethod
-    def to_ti_list(py_list):
+    def to_ti_list(py_list) -> str:
         if TiInterop.is_ti_list(py_list):
             return py_list
         return "{" + ",".join(map(str, py_list)) + "}"
     
     @staticmethod
-    def to_ti_mat(py_list):
+    def to_ti_mat(py_list) -> str:
         if TiInterop.is_ti_mat(py_list):
             return py_list
         return "[" + "".join(map(lambda row: TiInterop.to_ti_list(row).replace('{', '[').replace('}', ']'), py_list)) + "]"
     
     @staticmethod
-    def to_py_list(ti_list_str):
+    def to_py_list(ti_list_str) -> list:
         if isinstance(ti_list_str, list):
             return ti_list_str
-        if TiInterop.is_ti_list(ti_list_str): #ti_list_str.startswith('{') and ti_list_str.endswith('}') and ':' not in ti_list_str:
+        if TiInterop.is_ti_list(ti_list_str): 
             return [float(x.replace("−", "-")) if is_numeric(x) else int(x.replace("−", "-")) if is_digit(x) else x.strip() for x in ti_list_str[1:-1].split(",")]
 
     @staticmethod
-    def is_reg_py_list(py_list):
+    def is_reg_py_list(py_list) -> bool:
         if not isinstance(py_list, list):
             return False
         return not all(isinstance(item, list) for item in py_list)
@@ -112,13 +119,13 @@ class TiInterop:
             return [[float(x.replace("−", "-")) if is_numeric(x) else int(x.replace("−", "-")) if is_digit(x) else x.strip() for x in row.split(",")] for row in ti_mat_str[2:-2].split("][")]
 
     @staticmethod
-    def to_ti_col_vec(matrix):
+    def to_ti_col_vec(matrix) -> str:
         if TiInterop.is_ti_col_vec(matrix):
             return matrix
         return TiInterop.to_ti_mat(TiInterop.to_py_col_vec(matrix))
     
     @staticmethod
-    def to_py_col_vec(matrix):
+    def to_py_col_vec(matrix) -> list:
         if TiInterop.is_py_col_vec(matrix):
             return matrix
         elif TiInterop.is_reg_py_list(matrix):
@@ -129,10 +136,12 @@ class TiInterop:
             return TiInterop.to_py_col_vec(TiInterop.flatten(matrix))
         elif TiInterop.is_ti_row_vec(matrix):
             return TiInterop.to_py_col_vec(TiInterop.to_py_mat(matrix))
+        elif TiInterop.is_py_mat(matrix):
+            return TiInterop.to_py_col_vec(TiInterop.flatten(matrix))
         raise ValueError("Cannot convert to column vec: {}".format(matrix))
     
     @staticmethod
-    def to_py_row_vec(matrix):
+    def to_py_row_vec(matrix) -> list:
         if TiInterop.is_py_row_vec(matrix):
             return matrix
         elif TiInterop.is_reg_py_list(matrix):
@@ -143,27 +152,29 @@ class TiInterop:
             return TiInterop.to_py_row_vec(TiInterop.flatten(matrix))
         elif TiInterop.is_ti_row_vec(matrix):
             return TiInterop.to_py_row_vec(TiInterop.to_py_mat(matrix))
+        elif TiInterop.is_py_mat(matrix):
+            return TiInterop.to_py_row_vec(TiInterop.flatten(matrix))
         raise ValueError("Cannot convert to row vec: {}".format(matrix))
                        
     @staticmethod
-    def is_py_row_vec(matrix):
+    def is_py_row_vec(matrix) -> bool:
         if isinstance(matrix, list):
             return len(matrix) == 1 and isinstance(matrix[0], list)
         return False
     
     @staticmethod
-    def is_py_col_vec(matrix):
+    def is_py_col_vec(matrix) -> bool:
         if isinstance(matrix, list):
             return all(isinstance(row, list) and len(row) == 1 for row in matrix)
         return False
     
     @staticmethod
-    def flatten(lst):
+    def flatten(lst) -> list:
         """Flatten a list of lists into a single list."""
         return [item for sublist in lst for item in (TiInterop.flatten(sublist) if isinstance(sublist, list) else [sublist])]
     
     @staticmethod
-    def is_equality(expression: str):
+    def is_equality(expression: str) -> bool:
         if not isinstance(expression, str):
             return False
         if "=" not in expression and "==" not in expression:
@@ -176,6 +187,13 @@ class TiInterop:
             lhs, rhs = expression.split("=", 1)
         return not (lhs.strip() == "" and rhs.strip() == "")
 
+
+    @staticmethod
+    def ti_list_to_mat(ti_list_str, elements_per_row = 1) -> str: 
+        if not TiInterop.is_ti_list(ti_list_str):
+            raise ValueError("Invalid ti list string: {}".format(ti_list_str))
+        return TiInterop.exec("list@>mat({}, {})".format(ti_list_str, elements_per_row))
+        
 def exec(cmd_str_or_func_name, *args):
     if len(args) > 0:
         try:
@@ -194,3 +212,18 @@ def exec(cmd_str_or_func_name, *args):
         return readST('expr("{}")'.format(cmd_str_or_func_name))
     except:
         pass
+    
+
+
+def maps_types(x):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
+    
+    
+colvec = [[1,2,3],[2,3,3],[3,2,1]]
+
+
