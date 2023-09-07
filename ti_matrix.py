@@ -11,6 +11,13 @@ from ti_collections import TiCollections
     
 class TiMatrix(TiCollections):
     
+    def __init__(self, matrix_or_str: (str, list) = None):
+        if not matrix_or_str:
+            matrix_or_str = [[]]
+        self.ti_matrix = self.to_ti_mat(matrix_or_str)
+        self.py_matrix = self.to_py_mat(self.ti_matrix)
+       
+    
     def abs(self, py_matrix):
         ti_matrix = TiCollections.to_ti_mat(py_matrix)
         result_str = call_func("abs", ti_matrix)
@@ -116,6 +123,12 @@ class TiMatrix(TiCollections):
         ti_matrix = TiCollections.to_ti_mat(py_matrix)
         result_str = call_func("eigVl", ti_matrix)
         return TiCollections.to_py_mat(result_str)    
+    
+    def floor(self):
+        
+        #ti_matrix = TiCollections.to_ti_mat(py_matrix)
+        return TiMatrix(call_func("floor", self.ti_matrix))
+        return TiCollections.to_py_mat(result_str)
     
     def det(self, py_matrix, tol=None):
         ti_matrix = TiCollections.to_ti_mat(py_matrix)
@@ -264,6 +277,9 @@ class TiMatrix(TiCollections):
         ti_matrix = TiCollections.to_ti_mat(py_matrix)
         result_str = eval_expr("({}^-1)".format(ti_matrix))
         return TiCollections.to_py_mat(result_str)
+    
+    def __repr__(self):
+        return self.ti_matrix
     
     """
     
