@@ -1,5 +1,3 @@
-
-
 from collections import namedtuple
 FracTuple = namedtuple('FracTuple', ['numerator', 'denominator'])
 
@@ -97,7 +95,14 @@ class Frac:
         return self.denominator
     
     def __float__(self) -> float:
-        return float(self.n/self.d)
+        try:
+            return float(self.n/self.d)
+        except Exception as e:
+            print("There was an error casting to float {}".format(e))
+            print("attempting to return {}".format(self.approx))
+            return self.approx
+        finally:
+            return self.approx
     
     def __int__(self) -> int:
         return int(self.approx)
