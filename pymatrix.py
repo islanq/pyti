@@ -1,6 +1,7 @@
 from ti_collections import TiCollections
+from lib.symbols import Symbol
 
-class CoreMatrix:
+class PyMatrix:
     def __init__(self, data):
         self.data = data
         self.rows = len(data)
@@ -10,8 +11,17 @@ class CoreMatrix:
         self._current_col = 0
         
     @property
+    def has_vars(self):
+        if  any(isinstance(x, Symbol) for row in self.data for x in row):
+            return True
+        if any(isinstance(x, str) for row in self.data for x in row):
+            return True
+        return False
+        
+    @property
     def T(self):
         return self.transpose()
+    
     @property
     def is_row_vec(self):
         return self.rows == 1
@@ -31,14 +41,14 @@ class CoreMatrix:
             self.data[indices] = value
 
     def __eq__(self, other):
-        if isinstance(other, CoreMatrix):
+        if isinstance(other, PyMatrix):
             return self.data == other.data
         elif isinstance(other, 'Vector'):
             return self.data == [other.data] if self.is_row_vec else self.data == [[x] for x in other.data]
         return False
 
     def __gt__(self, other):
-        if isinstance(other, CoreMatrix):
+        if isinstance(other, PyMatrix):
             return self.__gt_mat(other)
         elif isinstance(other, 'Vector'):
             return self.__gt_vec(other)
@@ -51,7 +61,7 @@ class CoreMatrix:
             return not self.__gt_vec(other)
         return False
 
-    def __gt_mat(self, other_mat: 'CoreMatrix'):
+    def __gt_mat(self, other_mat: 'PyMatrix'):
         return self.rows > other_mat.rows and self.cols > other_mat.cols
 
     def __gt_vec(self, other_vec):
@@ -74,8 +84,6 @@ class CoreMatrix:
 
     def __list__(self):
         return self.data
-
-    
 
     def __str__(self):
         return "\n".join(["\t".join(map(str, row)) for row in self.data])
@@ -105,13 +113,13 @@ class CoreMatrix:
         self.shape = (self.rows, self.cols)
 
     def __add__(self, other):
-        return CoreMatrix([[a + b for a, b in zip(row1, row2)] for row1, row2 in zip(self.data, other.data)])
+        return PyMatrix([[a + b for a, b in zip(row1, row2)] for row1, row2 in zip(self.data, other.data)])
     
     def __radd__(self, other):
         return self.__add__(other)
 
     def __sub__(self, other):
-        return CoreMatrix([[a - b for a, b in zip(row1, row2)] for row1, row2 in zip(self.data, other.data)])
+        return PyMatrix([[a - b for a, b in zip(row1, row2)] for row1, row2 in zip(self.data, other.data)])
     
     def __rsub__(self, other):
         return self.__sub__(other)
@@ -119,7 +127,7 @@ class CoreMatrix:
     def __mul__(self, other):
         if isinstance(other, 'Vector'):
             return self.__mul_vector(other)
-        elif isinstance(other, CoreMatrix):
+        elif isinstance(other, PyMatrix):
             return self.__mul_matrix(other)
         elif isinstance(other, (int, float)):
             return self.__mul_scalar(other)
@@ -130,22 +138,22 @@ class CoreMatrix:
         return self.__mul__(other)
     
     def __mul_matrix(self, other):
-        return CoreMatrix([[sum(self.data[i][k] * other.data[k][j] for k in range(self.cols)) for j in range(other.cols)] for i in range(self.rows)])
+        return PyMatrix([[sum(self.data[i][k] * other.data[k][j] for k in range(self.cols)) for j in range(other.cols)] for i in range(self.rows)])
     
     def __mul_scalar(self, value: (int, float)):
-        return CoreMatrix([[self.data[i][j] * value for j in range(self.cols)] for i in range(self.rows)])
+        return PyMatrix([[self.data[i][j] * value for j in range(self.cols)] for i in range(self.rows)])
     
     def __mul_vector(self, vector: 'Vector'):
-        from vector import Vector
+        from pyvector import PyVector
         if len(self) != len(vector):
             raise ValueError("Vectors must have the same size for element-wise multiplication")
-        return Vector([self[i] * vector[i] for i in range(len(self))])
+        return PyVector([self[i] * vector[i] for i in range(len(self))])
 
     def transpose(self):
-        return CoreMatrix([[self.data[j][i] for j in range(self.rows)] for i in range(self.cols)])
+        return PyMatrix([[self.data[j][i] for j in range(self.rows)] for i in range(self.cols)])
 
     def scalar_multiply(self, scalar):
-        return CoreMatrix([[self.data[i][j] * scalar for j in range(self.cols)] for i in range(self.rows)])
+        return PyMatrix([[self.data[i][j] * scalar for j in range(self.cols)] for i in range(self.rows)])
 
     # Row Operations
     def row_swap(self, i, j):
