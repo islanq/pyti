@@ -3,13 +3,13 @@ import sys
 if sys.platform == 'win32':
     from lib.polyfill import is_numeric, is_digit
     from lib.frac import Frac
-    tiexec = None
 else:
     from ti_system import readST, writeST
     from eval_expr import eval_expr, call_func
     from ti_interop import tiexec
     from polyfill import is_numeric, is_digit
 
+from ti_interop import tiexec, TiType
 
 class TiReadWriteException(Exception):
     def __init__(self, message):
@@ -195,7 +195,6 @@ class TiCollections:
         else:
             lhs, rhs = expression.split("=", 1)
         return not (lhs.strip() == "" and rhs.strip() == "")
-
 
     @staticmethod
     def ti_list_to_mat(ti_list_str, elements_per_row = 1) -> str: 
