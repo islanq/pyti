@@ -93,6 +93,8 @@ def _is_assignment_attempt(expr) -> bool:
     return any(op in expr for op in _assignment_operators)
 
 def var_save(name, value) -> bool:
+    if not isinstance(value, str):
+        value = str(value)
     try:
         writeST(name, value)
     except:
