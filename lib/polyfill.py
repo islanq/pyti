@@ -47,6 +47,41 @@ def is_alnum(s):
     finally:
         return match(_alnum_pat, s) is not None
     
+
+def reduce_quotes(text):
+    """Removes all empty quote pairs from a string."""
+    # Step 1: Find the middle index to split the string in half
+    middle_idx = len(text) // 2
+    lhs = text[:middle_idx]
+    rhs = text[middle_idx:]
+    
+    # Step 2: Count the quotes in each half
+    lhs_count = lhs.count("'") + lhs.count('"')
+    rhs_count = rhs.count("'") + rhs.count('"')
+    
+    # Step 3: Ensure even number of quotes in each half
+    if lhs_count % 2 != 0:
+        # Find and remove the first quote from the left half
+        for q in ['"', "'"]:
+            if q in lhs:
+                lhs = lhs.replace(q, "", 1)
+                break
+                
+    if rhs_count % 2 != 0:
+        # Find and remove the first quote from the right half
+        for q in ['"', "'"]:
+            if q in rhs:
+                rhs = rhs.replace(q, "", 1)
+                break
+                
+    # Step 4: Join the two halves back together
+    balanced_text = lhs + rhs
+    
+    # Step 5: Continuously remove empty quote pairs until none are left
+    while any(q in balanced_text for q in ['""', "''"]):
+        balanced_text = balanced_text.replace('""', '').replace("''", '')
+
+    return balanced_text
 """
 For some reason, the TI CAS system was NOT having the regex,
 however, it is much faster than the ord methods, and it is
