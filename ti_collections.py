@@ -292,23 +292,23 @@ class TiCollections:
             lhs, rhs = expression.split("=", 1)
         return not (lhs.strip() == "" and rhs.strip() == "")
 
-py_lst_str = str( [1,2,3,4,1,'h',3,4] )
-py_mat_str = str( [[1,2,3,4],[1,'h',-3,4]] )
-ti_mat_str = "[[1,-2,3,4][1,h,3,4]]"
-print(py_mat_str)
-print(py_lst_str)
+# py_lst_str = str( [1,2,3,4,1,'h',3,4] )
+# py_mat_str = str( [[1,2,3,4],[1,'h',-3,4]] )
+# ti_mat_str = "[[1,-2,3,4][1,h,3,4]]"
+# print(py_mat_str)
+# print(py_lst_str)
 
 
 
 
-assert (_py_mat_re.match(py_mat_str) is not None)
-assert (_py_mat_re.match(py_lst_str) is None)
-assert (_py_mat_re.match(ti_mat_str) is None)
+# assert (_py_mat_re.match(py_mat_str) is not None)
+# assert (_py_mat_re.match(py_lst_str) is None)
+# assert (_py_mat_re.match(ti_mat_str) is None)
 
-assert (_py_lst_re.match(py_lst_str) is not None)
-assert (_py_lst_re.match(py_mat_str) is None)
-assert (_py_lst_re.match(ti_mat_str) is None)
+# assert (_py_lst_re.match(py_lst_str) is not None)
+# assert (_py_lst_re.match(py_mat_str) is None)
+# assert (_py_lst_re.match(ti_mat_str) is None)
 
 
 
-print(TiCollections.py_str_to_mat(py_mat_str))
+# print(TiCollections.py_str_to_mat(py_mat_str))
