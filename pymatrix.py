@@ -1,5 +1,9 @@
+import sys
+if sys.platform == 'win32':
+    from lib.symbols import Symbol
+
 from ti_collections import TiCollections
-from lib.symbols import Symbol
+
 
 class PyMatrix:
     def __init__(self, data):
