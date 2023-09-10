@@ -57,9 +57,12 @@ def eval_expr(expr, trypyeval=False):
         if trypyeval == True:
             res = _return_evaled_if_possible(res)
         return res
-    except Exception as err:
-        print(err)
-        return res
+    except NameError as ne:
+        print("eval_expr error:{}".format(ne))
+        pass
+    except Exception as er:
+        print("eval_expr error:{}".format(er))
+        pass
 
 def call_func(funcname, *pyargs):
     fargs = ','.join(map(str, pyargs))
