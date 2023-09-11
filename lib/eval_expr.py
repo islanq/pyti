@@ -1,5 +1,5 @@
 def _add_required_local_func():
-    func_str =   'Define strsub(s,so,sn)=Func'
+    func_str = 'Define strsub(s,so,sn)=Func'
     func_str += ':Local c,sl'
     func_str += ':""→sl'
     func_str += ':inString(s,so)→c'
@@ -18,11 +18,13 @@ def _add_required_local_func():
         pass
     if not "strsub" in funs:
         try:
-            readST( func_str)
+            readST(func_str)
         except:
             pass
 
 # Internal helper functions....
+
+
 def _return_number_if_possible(s):
     try:
         f = float(s)
@@ -30,11 +32,13 @@ def _return_number_if_possible(s):
     except ValueError:
         return s
 
+
 def _return_evaled_if_possible(thing):
     try:
         return eval("("+str(thing)+")")
     except:
         return thing
+
 
 def _cleanstr(res):
     res = res[1:-1]  # to remove the quotes
@@ -47,10 +51,13 @@ def _cleanstr(res):
     return res
 
 # Public functions
+
+
 def eval_expr(expr, trypyeval=False):
     from ti_system import writeST, readST
     try:
-        writeST("tmppy_", 'strsub(string(' + str(expr) + '),"/","$%$")')  # eval and store
+        # eval and store
+        writeST("tmppy_", 'strsub(string(' + str(expr) + '),"/","$%$")')
         res = readST("tmppy_")  # retrieve stored value
         res = res.replace("$%$", "/")  # magic replacement
         res = _cleanstr(res)
@@ -64,6 +71,7 @@ def eval_expr(expr, trypyeval=False):
         print("eval_expr error:{}".format(er))
         pass
 
+
 def call_func(funcname, *pyargs):
     fargs = ','.join(map(str, pyargs))
     expr = funcname + '(' + fargs + ')'
@@ -73,6 +81,7 @@ def call_func(funcname, *pyargs):
     except Exception as err:
         print("Something went wrong...\nres: {}\nerror:{}".format(res, err))
         return None
+
 
 # Aliases for compat with other stuff
 caseval = eval_expr
