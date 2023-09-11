@@ -1,7 +1,7 @@
 import sys
 
-
 if sys.platform == 'win32':
+    sys.path.extend(['../lib/', './lib/', '../'])
     # exec(open('__init__.py').read())
     readST = None
     writeST = None
