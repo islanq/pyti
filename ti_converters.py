@@ -1,18 +1,38 @@
 import sys
 
 if sys.platform == 'win32':
-    from lib.dummy_types import *
-    from lib.polyfill import is_numeric
-else:
-    from polyfill import is_numeric
-    from dummy_types import *
+    sys.path.extend(['../lib/', './lib/', '../'])
 
-from ti_formatters import PyFormatter, TiFormatter
+from polyfill import is_numeric, create_varied_sequence
+from ti_traits import TraitsReport
+from dummy_types import *
+
+_comma_inclusive_variations = create_varied_sequence('],', '[', max=10)
+_comma_exclusive_variations = create_varied_sequence(']', '[', max=10)
 
 
-def convert_element(x):
+def _flatten(lst):
+    """Flatten a list of lists using for loop"""
+    if not isinstance(lst, list):
+        return [lst]
+    if len(lst) == 0:
+        return lst
+
+    """Flatten an arbitrarily nested list using an iterative approach."""
+    while any(isinstance(i, list) for i in lst):
+        new_lst = []
+        for i in lst:
+            if isinstance(i, list):
+                new_lst.extend(i)
+            else:
+                new_lst.append(i)
+        lst = new_lst
+    return lst
+
+
+def _convert_element(x):
     if not isinstance(x, str):
-        x = str(x)
+        x = str(x).strip()
         if "−" in x:
             x.replace("−", "-")
     if is_numeric(x):
@@ -24,192 +44,140 @@ def convert_element(x):
         return x.strip('"\'')
 
 
-class _ConversionAPI:
-    def list(self):
-        raise NotImplementedError("Subclasses must implement this method")
-
-    def mat(self):
-        raise NotImplementedError("Subclasses must implement this method")
-
-    def row_vec(self):
-        raise NotImplementedError("Subclasses must implement this method")
-
-    def col_vec(self):
-        raise NotImplementedError("Subclasses must implement this method")
+def _ensure_double_brackets(mat_str):
+    mat_str = _strip_lead_trail_brackets(mat_str)
+    return '[[' + mat_str + ']]'
 
 
-class _Converter:
-    @staticmethod
-    def list(obj):
-        raise NotImplementedError("Subclasses must implement this method")
-
-    @staticmethod
-    def mat(obj):
-        raise NotImplementedError("Subclasses must implement this method")
-
-    @staticmethod
-    def row_vec(obj):
-        raise NotImplementedError("Subclasses must implement this method")
-
-    @staticmethod
-    def col_vec(obj):
-        raise NotImplementedError("Subclasses must implement this method")
+def _ensure_single_brackets(string):
+    string = _strip_lead_trail_brackets(string)
+    return '[' + string + ']'
 
 
-class _ConvertsToPy(_Converter):
-
-    @staticmethod
-    def _py_str_to_mat(ti_mat_str) -> list:
-        if isinstance(ti_mat_str, list):
-            return ti_mat_str
-
-        if not TiCollections.is_py_mat_str(ti_mat_str):
-            raise ValueError("Invalid ti matrix string: {}".format(ti_mat_str))
-        return [
-            [
-                convert_element(x.strip()) for x in row.split(",")
-            ]
-            for row in ti_mat_str[2:-2].split("], [")
-        ]
-
-    @staticmethod
-    def list(old_type):
-
-        @staticmethod
-        def from_py_str_list(obj) -> list:
-            return [obj(x.strip()) for x in obj[1:-1].split(",")]
-
-        def from_ti_mat(obj) -> list:
-            # Convert a TI matrix string to a Python list
-            return [item for sublist in obj for item in sublist]
-
-        def from_ti_list(obj) -> list:
-            # Convert a TI list string to a Python list
-            return [x.strip() for x in obj[1:-1].split(",")]
-
-        def from_py_mat(obj) -> list:
-            # Convert a Python matrix to a Python list
-            return [item for sublist in obj for item in sublist]
-
-        conversion_mapping = {
-            TiList: from_ti_list,
-            TiMat: from_ti_mat,
-            TiRowVec: from_ti_mat,
-            TiColVec: from_ti_mat,
-            PyMat: from_py_mat,
-            PyStrList: from_py_str_list
-        }
-
-        if old_type in conversion_mapping:
-            return conversion_mapping[old_type]
-
-    @staticmethod
-    def mat(old_type):
-        pass
-
-    @staticmethod
-    def row_vec(old_type):
-        pass
-
-    @staticmethod
-    def col_vec(old_type):
-        pass
+def _strip_lead_trail_brackets(string):
+    while string.startswith('['):
+        string = string.lstrip('[')
+    while string.endswith(']'):
+        string = string.rstrip(']')
+    return string.replace('{', '').replace('}', '')
 
 
-class _ConvertsToTi(_Converter):
-
-    @staticmethod
-    def ti_col_vec_from_py_col_vec(matrix):
-        return _ConvertsToTi.to_ti_mat(matrix)
-
-    @staticmethod
-    def ti_list_from_py_list(py_list):
-        return "{" + ",".join(map(str, py_list)) + "}"
-
-    @staticmethod
-    def ti_mat_from_py_mat(py_list):
-        return "[" + "".join(map(lambda row: _ConvertsToTi.ti_list_from_py_list(row).replace('{', '[').replace('}', ']'), py_list)) + "]"
-
-    @staticmethod
-    def ti_row_vec_from_py_row_vec(matrix):
-        return _ConvertsToTi.to_ti_mat(_ConvertsToTi.to_py_row_vec(matrix))
-
-    @staticmethod
-    def list(old_type):
-        pass
-
-    @staticmethod
-    def mat(old_type):
-        pass
-
-    @staticmethod
-    def row_vec(old_type):
-        pass
-
-    @staticmethod
-    def col_vec(old_type):
-        pass
+def _strip_quotes(string):
+    if "'" in string:
+        string = string.replace("'", "")
+    if '"' in string:
+        string = string.replace('"', '')
+    return string
 
 
-class TiToPy(_ConversionAPI):
-    @staticmethod
-    def list(obj):
-        converter, callback = PyFormatter.format_list(obj)
-        converted = converter(obj)
-        return callback(converted)
+def _list_to_mat(lst, num_cols: int = 1, fill: (int, str) = 0):
+    """_summary_
 
-        if isinstance(obj, list):
-            return obj
-        elif TiCollections.is_ti_list(obj):
-            return [obj(x.strip()) for x in obj[1:-1].split(",")]
-        elif TiCollections.is_py_list_str(obj):
-            return TiCollections.py_str_to_list(obj)
-        raise UnconvertableString("Cannot convert to list: {}".format(obj))
+    Args:
+        lst (_type_): _description_ python list
+        num_cols (int, optional): _description_. Defaults to 1.
+        fill (int, str, optional): _description_. Defaults to 0.
 
-    @staticmethod
-    def mat(obj):
-        if isinstance(obj, list):
-            return obj
-        if not TiCollections.is_ti_mat(obj):
-            raise ValueError("Invalid ti matrix string: {}".format(obj))
-        # Helper function to process a row string and return a list of processed elements
+    Returns:
+        _type_: _description_ python matrix (list of lists)
+    """
+    # Calculate the number of rows needed
+    num_rows = (len(lst) + num_cols - 1) // num_cols
 
-        def process_row(row_str):
-            return [convert_element(x.strip().replace("−", "-")) for x in row_str.split(",")]
-        # Remove outermost brackets and split the string into individual row strings
-        row_strs = obj[2:-2].split("], [")
-        # Process each row string and return the list of processed rows
-        return [process_row(row_str) for row_str in row_strs]
-        return TiCollections.to_py_mat(obj)
+    # Create the matrix with the elements from the list and fill the remaining spaces with 0s
+    mat = [[fill] * num_cols for _ in range(num_rows)]
+    for i, val in enumerate(lst):
+        row = i // num_cols
+        col = i % num_cols
+        mat[row][col] = val
 
-    @staticmethod
-    def row_vec(obj):
-        return TiCollections.to_py_row_vec(obj)
-
-    @staticmethod
-    def col_vec(obj):
-        return TiCollections.to_py_col_vec(obj)
+    return mat
 
 
-class PyToTi(_ConversionAPI):
-    @staticmethod
-    def list(obj):
-        converter = TiFormatter.format_list(obj)
-        converted = converter(obj)
-        return converted
+def _mat_to_mat(mat, rows: int, cols: int, fill: int = 0):
+    if len(mat) > 0:
+        if not isinstance(mat[0], list):
+            mat = [mat]
+    # Flatten the original matrix into a single list
+    flat_list = [item for sublist in mat for item in sublist]
 
-        if TiCollections.is_ti_list(py_list):
-            return py_list
-        return "{" + ",".join(map(str, py_list)) + "}"
+    # Create the new matrix with the reshaped dimensions, filling in values from the flattened list
+    # and using the specified fill value for any extra spaces
+    new_mat = []
+    for i in range(rows):
+        row = []
+        for j in range(cols):
+            index = i * cols + j
+            if index < len(flat_list):
+                row.append(flat_list[index])
+            else:
+                row.append(fill)
+        new_mat.append(row)
 
-    @staticmethod
-    def mat(obj):
-        pass
+    return new_mat
 
-    @staticmethod
-    def row_vec(obj):
-        pass
 
-    @staticmethod
-    def col_vec(obj):
-        pass
+def _remove_internal_brackets(x):
+    return x.replace('][', ',').replace('],[', ',')
+
+
+def _convert_to_ti_brackets(x):
+    return x.replace('],[', '][').replace('], [', '][')
+
+
+def _convert_to_py_brackets(x):
+    return x.replace('][', '],[')
+
+
+def _make_common_type(x):
+    if not isinstance(x, str):
+        x = str(x).strip()
+    str_strip = _strip_lead_trail_brackets(x)
+    str_norm = str_strip.replace(' ', '')
+    return str_norm
+
+
+def to_ti_mat(x):
+    try:
+        str_comm = _make_common_type(x)
+        str_cnvbr = _convert_to_ti_brackets(str_comm)
+        str_strip = _strip_quotes(str_cnvbr)
+        return '[[' + str_strip + ']]'
+    except Exception as e:
+        print("There was an error converting to Py List\n{}".format(e))
+        raise e
+
+
+def to_py_list(x):
+    try:
+        str_comm = _make_common_type(x)
+        str_rmbr = _remove_internal_brackets(str_comm)
+        str_strip = _strip_quotes(str_rmbr)
+        elements = str_strip.split(',')
+        return [_convert_element(elem.strip()) for elem in elements]
+    except Exception as e:
+        print("There was an error converting to Py List\n{}".format(e))
+        raise e
+
+
+def to_py_mat(x):
+    try:
+        str_comm = _make_common_type(x)
+        str_rmbr = _convert_to_py_brackets(str_comm)
+        str_srrip = _strip_quotes(str_rmbr)
+        elements = str_srrip.split('],[')
+        return [[_convert_element(elem.strip()) for elem in row.split(',')] for row in elements]
+    except Exception as e:
+        print("There was an error converting to Py Mat\n{}".format(e))
+        raise e
+
+
+def to_ti_list(x):
+    try:
+        str_comm = _make_common_type(x)
+        str_rmbr = _remove_internal_brackets(str_comm)
+        str_strip = _strip_quotes(str_rmbr)
+        return '{' + str_strip + '}'
+    except Exception as e:
+        print("There was an error converting to TI List\n{}".format(e))
+        raise e
