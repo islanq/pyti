@@ -1,70 +1,85 @@
 class TiType:
-    pass
-
+    def __init__(self, data: str):
+        self.data = data
 
 class TiList(TiType):
-    pass
-
+    def __init__(self, data):
+        super().__init__(data)
 
 class TiMat(TiType):
-    pass
-
+    def __init__(self, data):
+        super().__init__(data)
 
 class TiVec(TiType):
-    pass
+    def __init__(self, data):
+        super().__init__(data) 
 
 
 class TiColVec(TiVec):
-    pass
+    def __init__(self, data):
+        super().__init__(data)
 
 
 class TiRowVec(TiVec):
-    pass
+    def __init__(self, data):
+        super().__init__(data)
 
 
 class PyType:
-    pass
+    def __init__(self, data: list):
+        self.data = data
 
 
 class PyList(PyType):
-    pass
+    def __init__(self, data):
+        super().__init__(data)
 
 
 class PyMat(PyType):
-    pass
+    def __init__(self, data):
+        super().__init__(data)
 
 
 class PyVec(PyType):
-    pass
+    def __init__(self, data: list):
+        super().__init__(data)
 
 
 class PyColVec(PyVec):
-    pass
+    def __init__(self, data):
+        super().__init__(data)
 
 
 class PyRowVec(PyVec):
-    pass
+    def __init__(self, data):
+        super().__init__(data)
 
 
 class PyStrType:
-    pass
+    def __init__(self, data: str):
+        super().__init__(data)
 
 
 class PyStrList(PyStrType):
-    pass
+    def __init__(self, data: str):
+        super().__init__(data)
 
 
 class PyStrMat(PyStrType):
-    pass
+    def __init__(self, data: str):
+        super().__init__(data)
 
 
 class PyStrVec(PyStrType):
-    pass
+    def __init__(self, data: str):
+        super().__init__(data)
 
 
 class PyStrColVec(PyStrVec):
-    pass
+    def __init__(self, data):
+        super().__init__(data)
 
 
 class PyStrRowVec(PyStrVec):
-    pass
+    def __init__(self, data):
+        super().__init__(data)
