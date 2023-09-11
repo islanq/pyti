@@ -1,24 +1,29 @@
-import re
 import sys
 if sys.platform == 'win32':
-    from lib.polyfill import is_numeric
-    from lib.dummy_types import *
-else:
-    from polyfill import is_numeric
-    from dummy_types import *
+    sys.path.extend(['../lib/', './lib/', '../'])
 
-from ti_collections import UnconvertableString
+from polyfill import is_numeric, get_max_sequence, create_varied_sequence
+from dummy_types import *
+
 from collections import namedtuple
-from ti_converters import TiToPy
 Dimensions = namedtuple('Dimensions', ['rows', 'cols'])
 
-_no_comma_seps = re.compile(r'\b\]\s*\[\b')
-_comma_seps = re.compile(r'\b\],\s*\[\b')
+
+_comma_inclusive_variations = create_varied_sequence('],', '[', max=10)
+_comma_exclusive_variations = create_varied_sequence(']', '[', max=10)
 
 
-class _Traits:
-    def __init__(self, data) -> None:
-        self._data = data
+def seps_include_commas(x): return any(
+    sep in x for sep in _comma_inclusive_variations)
+
+
+def seps_exclude_commas(x): return any(
+    sep in x for sep in _comma_exclusive_variations)
+
+
+class _TypeTraits:
+    def __init__(self, data: (list, str)) -> None:
+        self._data = data.strip() if isinstance(data, str) else data
         self._is_list = False
         self._is_mat = False
         self._is_vec = False
@@ -145,7 +150,16 @@ class _Traits:
         raise NotImplementedError("Subclasses must implement this method")
 
 
-class TiStringTraits(_Traits):
+class _TiStringTraits(_TypeTraits):
+    
+    ti_type_mapping = {
+        'col_vec': TiColVec,
+        'row_vec': TiRowVec,
+        'vec': TiVec,
+        'mat': TiMat,
+        'list': TiList
+    }
+    
     def __init__(self, string: str) -> None:
         super().__init__(string)
 
@@ -156,20 +170,19 @@ class TiStringTraits(_Traits):
             return False
         if not self.data.endswith('}'):
             return False
-        return all(s not in self.data for s in [', ', ':'])
+        return not any(s in self.data for s in ['[', ':', ']'])
 
     def check_is_mat(self) -> bool:
         # ti mat will never contain ', ' or ':'
         if not isinstance(self.data, str):
             return False
-        if re.search(_comma_seps, self.data):
-            print('comma seps re match')
+        if seps_include_commas(self.data):
             return False
         if not self.data.startswith('[['):
             return False
         if not self.data.endswith(']]'):
             return False
-        if any(s in self.data for s in [':', '],[', '], [']):
+        if ':' in self.data:
             return False
         return True
 
@@ -218,38 +231,40 @@ class TiStringTraits(_Traits):
             return None
 
     def deduce_type(self):
-        if self._weak_type == 'col_vec':
-            return TiColVec
-        if self._weak_type == 'row_vec':
-            return TiRowVec
-        if self._weak_type == 'mat':
-            return TiMat
-        if self._weak_type == 'list':
-            return TiList
-        if self._weak_type == 'vec':
-            return TiVec
-        return None
+        return self.ti_type_mapping.get(self._weak_type, None)
 
 
-class PyStringTraits(_Traits):
+class _PyStringTraits(_TypeTraits):
+    
+    ti_type_mapping = {
+        'col_vec': TiColVec,
+        'row_vec': TiRowVec,
+        'vec': TiVec,
+        'mat': TiMat,
+        'list': TiList
+    }
+    
     def __init__(self, string) -> None:
         super().__init__(string)
 
     def check_is_list(self):
         if not isinstance(self.data, str):
             return False
-        if re.search(_no_comma_seps, self.data):
+        if seps_exclude_commas(self.data):
             return False
+        # if re.match(_no_comma_seps, self.data):
+        #     return False
         if not self.data.startswith("["):
             return False
         if not self.data.endswith("]"):
             return False
+        # [1, 2, 3]
         return True
 
     def check_is_mat(self):
         if not isinstance(self.data, str):
             return False
-        if re.search(_no_comma_seps, self.data):
+        if seps_exclude_commas(self.data):
             return False
         if not self.data.startswith("[["):
             return False
@@ -264,8 +279,9 @@ class PyStringTraits(_Traits):
         # [[1], [2], [3]]
         if not self.check_is_mat():
             return False
-        # it must NOT contain row separator
-        if not '], [' in self.data or not '],[' in self.data:
+        # it must contain row separator
+        # if not '], [' in self.data or not '],[' in self.data:
+        if not seps_include_commas(self.data):
             return False
         if not self.dim:
             return False
@@ -316,20 +332,19 @@ class PyStringTraits(_Traits):
             return None
 
     def deduce_type(self):
-        if self._weak_type == 'col_vec':
-            return PyStrColVec
-        if self._weak_type == 'row_vec':
-            return PyStrRowVec
-        if self._weak_type == 'vec':
-            return PyStrVec
-        if self._weak_type == 'mat':
-            return PyStrMat
-        if self._weak_type == 'list':
-            return PyStrList
-        return None
+        return self.ti_type_mapping.get(self._weak_type, None)
 
 
-class PyTraits(_Traits):
+class _PyTraits(_TypeTraits):
+    
+    py_type_mapping = {
+        'col_vec': PyColVec,
+        'row_vec': PyRowVec,
+        'vec': PyVec,
+        'mat': PyMat,
+        'list': PyList
+    }
+    
     def __init__(self, object) -> None:
         super().__init__(object)
 
@@ -367,42 +382,92 @@ class PyTraits(_Traits):
             return dims
         return Dimensions(len(self.data), len(self.data[0]))
 
-    def deduce_type(self):
-        if self._weak_type == 'row_vec':
-            return PyRowVec
-        if self._weak_type == 'col_vec':
-            return PyColVec
-        if self._weak_type == 'vec':
-            return PyVec
-        if self._weak_type == 'mat':
-            return PyMat
-        if self._weak_type == 'list':
-            return PyList
-        return None
+    def deduce_type(self):       
+        return self.py_type_mapping.get(self._weak_type, None)
 
 
-def get_report(obj: (str, list), strict=False):
-    def strongest_compatibility(reports):
-        # Assign weights
-        weights = {
-            'list': 1,
-            'mat': 2,
-            'vec': 3,
-            'col_vec': 4,
-            'row_vec': 4  # assuming same particularity as col_vec
-        }
+class TraitsReport:
 
-        # Filter valid reports
-        valid_reports = [report for report in reports if report['is_valid']]
+    _weights = {
+        'list': 1,
+        'mat': 2,
+        'vec': 3,
+        'col_vec': 4,
+        'row_vec': 4  # assuming same particularity as col_vec
+    }
 
-        # Sort based on weights
-        sorted_reports = sorted(
-            valid_reports, key=lambda x: weights[x['weak_type']], reverse=True)
+    def __init__(self, obj: (str, list)) -> None:
+        self.reports = [_PyTraits(obj), _PyStringTraits(
+            obj), _TiStringTraits(obj)]
+        self._valid_reports = [
+            report for report in self.reports if report.is_valid]
+        self._strongest = self._set_strongest()
 
-        # The first report in the sorted list is the strongest compatibility
-        return sorted_reports[0]
+    @property
+    def has_valid(self):
+        return self._has_valid
 
-    reports = [PyTraits(obj), PyStringTraits(obj), TiStringTraits(obj)]
-    if sum(report.is_valid for report in reports) > 1:
-        return strongest_compatibility(reports)
-    return next(report for report in reports if report.is_valid)
+    @property
+    def valid_count(self):
+        return len(self._valid_reports)
+
+    def all_reports(self):
+        return self.reports
+
+    def valid_reports(self):
+        return self._valid_reports
+
+    @property
+    def has_strongest(self) -> bool:
+        return self._strongest is not None
+
+    @property
+    def strongest(self) -> _TypeTraits:
+        return self._set_strongest()
+
+    def _set_strongest(self):
+        # if self._strongest:
+        #     return self._strongest
+        if self.valid_count == 0:
+            return None
+        self._strongest = sorted(
+            self._valid_reports, key=lambda x: self._weights[x.weak_type], reverse=True)[0]
+        # self._strongest = next(report for report in self.reports if report.is_valid)
+        return self._strongest
+
+    @staticmethod
+    def get_strongest(obj: (str, list)):
+        return TraitsReport(obj).strongest
+
+
+if __name__ == '__main__':
+    
+    
+    pymat = [[1, "2x", 3], [4, 5, 6]]
+    pycol = [[1], [2], [3]]
+    pyrow = [[1, 2, 3]]
+    pylst = [1, 2, 3]
+    tilst = '{1, 2x, 3}'
+    timat = '[[1, 2x, 3][4, 5, 6]]'
+    ticol = '[[1][2][3]]'
+    tirow = '[[1, 2, 3]]'
+
+    pymat_report = TraitsReport.get_strongest(pymat)
+    pylst_report = TraitsReport.get_strongest(pylst)
+    tilst_report = TraitsReport.get_strongest(tilst)
+    timat_report = TraitsReport.get_strongest(timat)
+    pyrow_report = TraitsReport.get_strongest(pyrow)
+    pycol_report = TraitsReport.get_strongest(pycol)
+    ticol_report = TraitsReport.get_strongest(ticol)
+    tirow_report = TraitsReport.get_strongest(tirow)
+
+    assert(pymat_report.strong_type == PyMat)
+    assert(pylst_report.strong_type == PyList)
+    assert(tilst_report.strong_type == TiList)
+    assert(timat_report.strong_type == TiMat)
+    assert(pyrow_report.strong_type == PyRowVec)
+    assert(pycol_report.strong_type == PyColVec)
+    assert(ticol_report.strong_type == TiColVec)
+    assert(tirow_report.strong_type == TiRowVec)
+    
+    print('all assertions passed')
