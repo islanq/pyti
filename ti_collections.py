@@ -1,6 +1,7 @@
+from ti_converters import _convert_element
 import sys
-import re
 if sys.platform == 'win32':
+    sys.path.extend(['../lib/', './lib/', '../'])
     from lib.polyfill import is_numeric, is_digit
     from lib.frac import Frac
 else:
@@ -10,12 +11,7 @@ else:
     from polyfill import is_numeric, is_digit
 from collections import namedtuple
 from ti_interop import tiexec
-_py_lst_pat = r'^\[\[.*\]\]$'
-_py_lst_re = re.compile(_py_lst_pat)
-# _py_mat_re = re.compile(r'^\[\[(?!.*,(?![ ])).*\]\]$')
-# _py_mat_re = re.compile(r'^\[\[.*\]\]$')
-_py_mat_re = re.compile(r'^\[\[.*(, ?).*\]\]$')
-from ti_converters import convert_element
+
 
 
 class UnconvertableString(Exception):
@@ -169,7 +165,7 @@ class TiCollections:
             return ti_list_str
         if not TiCollections.is_py_list_str(ti_list_str):
             raise ValueError("Invalid ti list string: {}".format(ti_list_str))
-        return [convert_element(x.strip()) for x in ti_list_str[1:-1].split(",")]
+        return [_convert_element(x.strip()) for x in ti_list_str[1:-1].split(",")]
 
     @staticmethod
     def py_str_to_mat2(ti_mat_str) -> list:
@@ -180,7 +176,7 @@ class TiCollections:
         # Helper function to process a row string and return a list of processed elements
 
         def process_row(row_str):
-            return [convert_element(x.strip()) for x in row_str.split(",")]
+            return [_convert_element(x.strip()) for x in row_str.split(",")]
         # Remove outermost brackets and split the string into individual row strings
         row_strs = ti_mat_str[2:-2].split("], [")
         # Process each row string and return the list of processed rows
@@ -194,7 +190,7 @@ class TiCollections:
             raise ValueError("Invalid ti matrix string: {}".format(ti_mat_str))
         return [
             [
-                convert_element(x.strip()) for x in row.split(",")
+                _convert_element(x.strip()) for x in row.split(",")
             ]
             for row in ti_mat_str[2:-2].split("], [")
         ]
@@ -204,7 +200,7 @@ class TiCollections:
         if isinstance(ti_list_str, list):
             return ti_list_str
         elif TiCollections.is_ti_list(ti_list_str):
-            return [convert_element(x.strip()) for x in ti_list_str[1:-1].split(",")]
+            return [_convert_element(x.strip()) for x in ti_list_str[1:-1].split(",")]
         elif TiCollections.is_py_list_str(ti_list_str):
             return TiCollections.py_str_to_list(ti_list_str)
         raise UnconvertableString(
@@ -242,7 +238,7 @@ class TiCollections:
         # Helper function to process a row string and return a list of processed elements
 
         def process_row(row_str):
-            return [convert_element(x.strip().replace("−", "-")) for x in row_str.split(",")]
+            return [_convert_element(x.strip().replace("−", "-")) for x in row_str.split(",")]
         # Remove outermost brackets and split the string into individual row strings
         row_strs = ti_mat_str[2:-2].split("], [")
         # Process each row string and return the list of processed rows
@@ -298,3 +294,5 @@ class TiCollections:
     def flatten(lst: list) -> list:
         """Flatten a list of lists into a single list."""
         return [item for sublist in lst for item in (TiCollections.flatten(sublist) if isinstance(sublist, list) else [sublist])]
+
+
