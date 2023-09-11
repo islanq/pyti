@@ -4,27 +4,27 @@ from ti_collections import TiCollections
 import sys
 if sys.platform == 'win32':
     from lib.wrappers import ensure_paired_type, ensure_paired_or_single_type
-else:    
+else:
     from wrappers import ensure_paired_type, ensure_paired_or_single_type
 
+
 class TiMath:
-    
+
     @ensure_paired_type((int, float, list))
     def lcm(self, lhs, rhs):
         pass
-    
+
     @ensure_paired_or_single_type((int, float, list))
     def max(self, lhs, rhs=None):
         pass
-    
-    def exact(self, val: (str, list)):
+
+    def exact(self, val: (str, list), tol=0.000001):
         if TiCollections.is_reg_py_list(val):
             val = TiCollections.to_py_list(val)
         elif TiCollections.is_py_mat(val):
             val = TiCollections.to_py_mat(val)
-        return tiexec("exact", val)
-    
-    
+        return tiexec("exact", val, tol)
+
     """
         solve(Equation, Var) ⇒ Boolean expression
         solve(Equation, Var=Guess) ⇒ Boolean expression
@@ -37,9 +37,10 @@ class TiMath:
         • solve(Equation, Var)|lowBound<Var<upBound
         • solve(Equation, Var=Guess)
     """
+
     def solve(self, *args):
         pass
-    
+
     """
         linSolve( SystemOfLinearEqns, Var1, Var2, ...) ⇒ list
         linSolve(LinearEqn1 and LinearEqn2 and..., Var1, Var2, ...) ⇒ list
@@ -76,16 +77,16 @@ class TiMath:
     def is_subspace(self):
         if not self.check_zero_vector():
             return False, "The zero vector is not in the set."
-        
+
         if not self.check_addition_closure():
             return False, "The set is not closed under addition."
-        
+
         if not self.check_scalar_multiplication_closure():
             return False, "The set is not closed under scalar multiplication."
-        
-        return True, "The set is a subspace of R^3." 
-    
-    
+
+        return True, "The set is a subspace of R^3."
+
+
 # a,b,h = symbols('a b h')
 
 # eq1 = ( -3, -6*a -15 )

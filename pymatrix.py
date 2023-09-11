@@ -13,19 +13,19 @@ class PyMatrix:
         self.shape = (self.rows, self.cols)
         self._current_row = 0
         self._current_col = 0
-        
+
     @property
     def has_vars(self):
-        if  any(isinstance(x, Symbol) for row in self.data for x in row):
+        if any(isinstance(x, Symbol) for row in self.data for x in row):
             return True
         if any(isinstance(x, str) for row in self.data for x in row):
             return True
         return False
-        
+
     @property
     def T(self):
         return self.transpose()
-    
+
     @property
     def is_row_vec(self):
         return self.rows == 1
@@ -85,13 +85,12 @@ class PyMatrix:
             for j in range(self.cols)
         )
 
-
     def __list__(self):
         return self.data
 
     def __str__(self):
         return "\n".join(["\t".join(map(str, row)) for row in self.data])
-    
+
     def add_vector(self, vector, position='column'):
         if position == 'column':
             if len(vector) != self.rows:
@@ -107,10 +106,11 @@ class PyMatrix:
         else:
             return "Position must be either 'column' or 'row'"
         return self
-    
+
     def add_column_vector(self, vector):
         if len(vector) != self.rows:
-            raise ValueError("Vector length must match the number of rows in the matrix.")
+            raise ValueError(
+                "Vector length must match the number of rows in the matrix.")
         for i in range(self.rows):
             self.data[i].append(vector[i])
         self.cols += 1
@@ -118,13 +118,13 @@ class PyMatrix:
 
     def __add__(self, other):
         return PyMatrix([[a + b for a, b in zip(row1, row2)] for row1, row2 in zip(self.data, other.data)])
-    
+
     def __radd__(self, other):
         return self.__add__(other)
 
     def __sub__(self, other):
         return PyMatrix([[a - b for a, b in zip(row1, row2)] for row1, row2 in zip(self.data, other.data)])
-    
+
     def __rsub__(self, other):
         return self.__sub__(other)
 
@@ -137,20 +137,21 @@ class PyMatrix:
             return self.__mul_scalar(other)
         else:
             raise TypeError("Unsupported type for multiplication")
-    
+
     def __rmul__(self, other):
         return self.__mul__(other)
-    
+
     def __mul_matrix(self, other):
         return PyMatrix([[sum(self.data[i][k] * other.data[k][j] for k in range(self.cols)) for j in range(other.cols)] for i in range(self.rows)])
-    
+
     def __mul_scalar(self, value: (int, float)):
         return PyMatrix([[self.data[i][j] * value for j in range(self.cols)] for i in range(self.rows)])
-    
+
     def __mul_vector(self, vector: 'Vector'):
         from pyvector import PyVector
         if len(self) != len(vector):
-            raise ValueError("Vectors must have the same size for element-wise multiplication")
+            raise ValueError(
+                "Vectors must have the same size for element-wise multiplication")
         return PyVector([self[i] * vector[i] for i in range(len(self))])
 
     def transpose(self):
@@ -173,13 +174,15 @@ class PyMatrix:
         return self
 
     def row_add(self, i, j, factor=1):
-        self.data[i] = [x + factor * y for x, y in zip(self.data[i], self.data[j])]
+        self.data[i] = [x + factor * y for x,
+                        y in zip(self.data[i], self.data[j])]
         return self
 
     def row_sub(self, i, j, factor=1):
-        self.data[i] = [x - factor * y for x, y in zip(self.data[i], self.data[j])]
+        self.data[i] = [x - factor * y for x,
+                        y in zip(self.data[i], self.data[j])]
         return self
-        
+
     def __str__(self):
         return "[" + "\n".join([str(row) for row in self.data]) + "]"
 
@@ -202,12 +205,11 @@ class PyMatrix:
             self._current_row += 1
 
         return item
-    
+
     def to_ti_col_vec(self):
         py_mat = list(self)
         return TiCollections.to_ti_col_vec(py_mat)
-    
+
     def to_ti_row_vec(self):
         py_mat = list(self)
         return TiCollections.to_ti_row_vec(py_mat)
-
