@@ -26,19 +26,21 @@ class Queue:
     def __repr__(self):
         return "Queue(" + ", ".join(map(str, self.items)) + ")"
 
+
 """
 
     Start Linked List
 
 """
 
+
 class LinkedList:
-  
+
     class _Node:
         def __init__(self, data):
             self.data = data
             self.next = None
-  
+
     def __init__(self):
         self.head = None
 
@@ -93,11 +95,13 @@ class LinkedList:
             curr_node = curr_node.next
         return " -> ".join(nodes)
 
+
 """
 
     Start Stack
 
 """
+
 
 class Stack:
     def __init__(self):
@@ -125,4 +129,4 @@ class Stack:
         return len(self.items)
 
     def __repr__(self):
-      return "Stack(" + ", ".join(map(str, self.items)) + ")"
+        return "Stack(" + ", ".join(map(str, self.items)) + ")"
