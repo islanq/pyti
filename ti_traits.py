@@ -75,7 +75,7 @@ class _TypeTraits:
         return self.deduce_type()
 
     def __len__(self) -> int:
-        return self.dim.rows
+        return self.dim[0]
 
     def check_is_list(self) -> bool:
         raise NotImplementedError("Subclasses must implement this method")
@@ -461,6 +461,27 @@ if __name__ == '__main__':
     ticol_report = TraitsReport.get_strongest(ticol)
     tirow_report = TraitsReport.get_strongest(tirow)
 
+    assert(pymat_report.is_mat)
+    assert(pylst_report.is_list)
+    assert(tilst_report.is_list)
+    assert(timat_report.is_mat)
+    assert(pyrow_report.is_row_vec)
+    assert(pycol_report.is_col_vec)
+    assert(ticol_report.is_col_vec)
+    assert(tirow_report.is_row_vec)
+    
+    assert(pymat_report.weak_type == 'mat')
+    assert(pylst_report.weak_type == 'list')
+    assert(tilst_report.weak_type == 'list')
+    assert(timat_report.weak_type == 'mat')
+    assert(pyrow_report.weak_type == 'row_vec')
+    assert(pycol_report.weak_type == 'col_vec')
+    assert(pycol_report.weak_type == 'col_vec')
+    assert(pycol_report.weak_type == 'col_vec')
+    assert(ticol_report.weak_type == 'col_vec')
+    assert(tirow_report.weak_type == 'row_vec')
+    
+    
     assert(pymat_report.strong_type == PyMat)
     assert(pylst_report.strong_type == PyList)
     assert(tilst_report.strong_type == TiList)
