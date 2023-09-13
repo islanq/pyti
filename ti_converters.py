@@ -1,47 +1,16 @@
+from wrappers import debug_in_out
 import sys
 
 if sys.platform == 'win32':
-    sys.path.extend(['../lib/', './lib/', '../'])
+    sys.path.extend(['../lib/', './lib/', '../', '.'])
 
 from polyfill import is_numeric, create_varied_sequence
 from ti_traits import TraitsReport
+from matrix_tools import flatten, convert_element
 from dummy_types import *
 
 _comma_inclusive_variations = create_varied_sequence('],', '[', max=10)
 _comma_exclusive_variations = create_varied_sequence(']', '[', max=10)
-
-
-def _flatten(lst):
-    """Flatten a list of lists using for loop"""
-    if not isinstance(lst, list):
-        return [lst]
-    if len(lst) == 0:
-        return lst
-
-    """Flatten an arbitrarily nested list using an iterative approach."""
-    while any(isinstance(i, list) for i in lst):
-        new_lst = []
-        for i in lst:
-            if isinstance(i, list):
-                new_lst.extend(i)
-            else:
-                new_lst.append(i)
-        lst = new_lst
-    return lst
-
-
-def _convert_element(x):
-    if not isinstance(x, str):
-        x = str(x).strip()
-        if "−" in x:
-            x.replace("−", "-")
-    if is_numeric(x):
-        try:
-            return int(x) if int(x) == float(x) else float(x)
-        except ValueError:
-            pass
-    else:
-        return x.strip('"\'')
 
 
 def _ensure_double_brackets(mat_str):
@@ -94,15 +63,23 @@ def _list_to_mat(lst, num_cols: int = 1, fill: (int, str) = 0):
     return mat
 
 
-def _mat_to_mat(mat, rows: int, cols: int, fill: int = 0):
+def _mat_to_mat(mat, elem_per_row: int, fill: int = 0):
+    # Ensure mat is a list of lists
     if len(mat) > 0:
         if not isinstance(mat[0], list):
             mat = [mat]
     # Flatten the original matrix into a single list
-    flat_list = [item for sublist in mat for item in sublist]
+    flat_list = flatten(mat)
 
-    # Create the new matrix with the reshaped dimensions, filling in values from the flattened list
-    # and using the specified fill value for any extra spaces
+    # Determine the number of rows and columns for the reshaped matrix
+    rows = len(flat_list) // elem_per_row
+    if len(flat_list) % elem_per_row != 0:
+        rows += 1
+    cols = elem_per_row
+
+    # Create the new matrix with the reshaped dimensions,
+    # filling in values from the flattened list and
+    # using the specified fill value for any extra spaces
     new_mat = []
     for i in range(rows):
         row = []
@@ -137,7 +114,65 @@ def _make_common_type(x):
     return str_norm
 
 
-def to_ti_mat(x):
+# Py Converters
+
+
+@debug_in_out(enabled=False)
+def to_py_mat(x, elemen_per_row: int = None, fill: int = 0) -> list:
+    try:
+        str_comm = _make_common_type(x)
+        str_rmbr = _convert_to_py_brackets(str_comm)
+        str_strip = _strip_quotes(str_rmbr)
+        elements = str_strip.split('],[')
+        py_matrix = [[convert_element(elem.strip())
+                      for elem in row.split(',')] for row in elements]
+        if elemen_per_row:
+            py_matrix = _mat_to_mat(py_matrix, elemen_per_row)
+
+        return py_matrix
+
+    except Exception as e:
+        print("There was an error converting to Py Mat\n{}".format(e))
+        raise e
+
+
+def to_py_list(x) -> list:
+    try:
+        str_comm = _make_common_type(x)
+        str_rmbr = _remove_internal_brackets(str_comm)
+        str_strip = _strip_quotes(str_rmbr)
+        elements = str_strip.split(',')
+        return [convert_element(elem.strip()) for elem in elements]
+    except Exception as e:
+        print("There was an error converting to Py List\n{}".format(e))
+        raise e
+
+
+def to_py_row_vec(x) -> list:
+    py_list = flatten(to_py_list(x))
+    return to_py_mat(py_list, len(py_list))
+
+
+def to_py_col_vec(x):
+    py_list = to_py_list(x)
+    py_list = flatten(to_py_list(py_list))
+    return [[elem] for elem in py_list]
+
+# TI Converters
+
+
+def to_ti_list(x) -> str:
+    try:
+        str_comm = _make_common_type(x)
+        str_rmbr = _remove_internal_brackets(str_comm)
+        str_strip = _strip_quotes(str_rmbr)
+        return '{' + str_strip + '}'
+    except Exception as e:
+        print("There was an error converting to TI List\n{}".format(e))
+        raise e
+
+
+def to_ti_mat(x) -> str:
     try:
         str_comm = _make_common_type(x)
         str_cnvbr = _convert_to_ti_brackets(str_comm)
@@ -148,36 +183,83 @@ def to_ti_mat(x):
         raise e
 
 
-def to_py_list(x):
+def to_ti_col_vec(x) -> str:
     try:
-        str_comm = _make_common_type(x)
-        str_rmbr = _remove_internal_brackets(str_comm)
-        str_strip = _strip_quotes(str_rmbr)
-        elements = str_strip.split(',')
-        return [_convert_element(elem.strip()) for elem in elements]
+        py_col_vec = to_py_col_vec(x)
+        ti_col_vec = to_ti_mat(py_col_vec)
+        return ti_col_vec
     except Exception as e:
-        print("There was an error converting to Py List\n{}".format(e))
+        print("There was an error converting to TI Col Vec\n{}".format(e))
         raise e
 
 
-def to_py_mat(x):
+def to_ti_row_vec(x) -> str:
     try:
-        str_comm = _make_common_type(x)
-        str_rmbr = _convert_to_py_brackets(str_comm)
-        str_srrip = _strip_quotes(str_rmbr)
-        elements = str_srrip.split('],[')
-        return [[_convert_element(elem.strip()) for elem in row.split(',')] for row in elements]
+        py_row_vec = to_py_row_vec(x)
+        ti_row_vec = to_ti_mat(py_row_vec)
+        return ti_row_vec
     except Exception as e:
-        print("There was an error converting to Py Mat\n{}".format(e))
+        print("There was an error converting to TI Col Vec\n{}".format(e))
         raise e
 
 
-def to_ti_list(x):
-    try:
-        str_comm = _make_common_type(x)
-        str_rmbr = _remove_internal_brackets(str_comm)
-        str_strip = _strip_quotes(str_rmbr)
-        return '{' + str_strip + '}'
-    except Exception as e:
-        print("There was an error converting to TI List\n{}".format(e))
-        raise e
+def parse_matrix(input, col_vec=False):
+    input = str(input).strip().replace(';', '],[')
+    return to_py_col_vec(input) if col_vec else to_py_mat(input)
+
+
+def append_vectors(matrix, column):
+    if isinstance(column, list):
+        column = flatten(column)
+    if len(matrix) != len(column):
+        raise ValueError(
+            "Matrix and column must have the same number of rows.")
+
+    result_matrix = [matrix_row + ([col_value[0]] if isinstance(
+        col_value, list) else [col_value])
+        for matrix_row, col_value in zip(matrix, column)]
+
+    return result_matrix
+
+
+def parse_matrix_iter(input_str):
+    rows = input_str.split(';')
+    matrix = []
+    for row in rows:
+        values = row.split(',')
+        matrix_row = [int(val) for val in values]
+        matrix.append(matrix_row)
+    return matrix
+
+
+def append_vectors(column_vectors):
+    # Determine the number of rows (length of any column vector)
+    num_rows = len(column_vectors[0])
+
+    # Initialize an empty result matrix with the same number of rows
+    result_matrix = [[] for _ in range(num_rows)]
+
+    # Append each column vector to the result matrix
+    for col_vector in column_vectors:
+        if len(col_vector) != num_rows:
+            raise ValueError(
+                "All column vectors must have the same number of rows.")
+        for i in range(num_rows):
+            result_matrix[i].append(col_vector[i])
+
+    return result_matrix
+
+
+def append_vectors(mat_or_column_vector, column_vector=None):
+    if column_vector is None:
+        column_vector = mat_or_column_vector
+        mat_or_column_vector = [[] for _ in range(len(column_vector))]
+
+    if len(mat_or_column_vector) == 0 or len(mat_or_column_vector) == len(column_vector):
+        for i in range(len(mat_or_column_vector)):
+            mat_or_column_vector[i].append(column_vector[i])
+    else:
+        raise ValueError(
+            "All column vectors must have the same number of rows.")
+    matrix = [flatten(x) for x in mat_or_column_vector]
+    return matrix
