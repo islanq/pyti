@@ -1,6 +1,7 @@
-
-from ti_collections import TiCollections
-
+import sys
+if sys.platform == 'win32':
+    sys.path.extend(['../lib/', './lib/', '../', '.'])
+from matrix_tools import to_col_vector, to_row_vector
 
 class VecorSizeError(Exception):
     pass
@@ -36,7 +37,7 @@ class PyVector:
     def __eq__(self, other):
         if isinstance(other, PyVector):
             return self.data == other.data
-        elif isinstance(other, CoreMatrix):
+        elif isinstance(other, PyMatrix):
             if other.rows == 1:
                 return self.data == other.data[0]
             elif other.cols == 1:
@@ -59,7 +60,7 @@ class PyVector:
     def __mul__(self, other):
         if isinstance(other, PyVector):
             return self.__mul_vector(other)
-        elif isinstance(other, CoreMatrix):
+        elif isinstance(other, PyMatrix):
             return self.__mul_matrix(other)
         elif isinstance(other, (int, float)):
             return self.__mul_scalar(other)
@@ -72,7 +73,8 @@ class PyVector:
         return sum([self[i] * other[i] for i in range(len(self))])
 
     def __mul_matrix(self, matrix):
-        if isinstance(matrix, CoreMatrix):
+        from pymatrix import PyMatrix
+        if isinstance(matrix, 'PyMatrix'):
             if len(self) != matrix.rows:
                 raise ValueError(
                     "Vector size must match the number of rows in the matrix for multiplication")
@@ -103,7 +105,7 @@ class PyVector:
     def __eq__(self, other):
         if isinstance(other, PyVector):
             return self.data == other.data
-        elif isinstance(other, CoreMatrix):
+        elif isinstance(other, PyMatrix):
             return self.data == other.data[0] if other.rows == 1 else self.data == [row[0] for row in other.data]
         return False
 
@@ -139,8 +141,9 @@ class PyVector:
         return other.normalize() * (self.dot(other.normalize()))
 
     def to_row_matrix(self):
+        from pymatrix import PyMatrix
         # Wrap the data in another list to make it a 2D list
-        return CoreMatrix([self.data])
+        return PyMatrix([self.data])
 
     # New method
     def to_col_matrix(self):
@@ -149,15 +152,14 @@ class PyVector:
         return PyMatrix([[x] for x in self.data])
 
     def to_ti_col_vec(self):
+        from pymatrix import PyMatrix
         py_mat = list(self.to_col_matrix())
-        return TiCollections.to_ti_col_vec(py_mat)
+        return PyMatrix(to_col_vector(py_mat))
 
     def to_ti_row_vec(self):
+        from pymatrix import PyMatrix
         py_mat = list(self.to_row_matrix())
-        return TiCollections.to_ti_row_vec(py_mat)
+        return PyMatrix(to_row_vector(py_mat))
+    
 
 
-# v = Vector([1, 2, 3])
-# print(v.to_col_matrix())
-# print(isinstance(v.to_col_matrix(), Vector))
-# print(v.to_row_matrix())
