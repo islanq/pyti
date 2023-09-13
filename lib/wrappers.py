@@ -1,3 +1,5 @@
+import sys
+
 def ensure_same_type(func):
     '''Ensure that the first two arguments to the function are of the same type.'''
     def wrapper(param1, param2, *args, **kwargs):
@@ -222,3 +224,36 @@ def ensure_single_or_paired_type(single_types, paired_type):
             return func(*args)
         return wrapper
     return decorator
+
+def debug_in_out(name: str = '', enabled=True):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            if enabled:
+                print("----------------------")
+                print("Function: {:<{}}".format(name if name else func.__name__, 10)) 
+                if args:
+                    print("Input args: {}".format(args))
+                if kwargs:
+                    print("Input kwargs:{:<{}}".format(kwargs,24))
+            
+            output = func(*args, **kwargs)
+            
+            if enabled:
+                print("Output: {}".format(output))
+                print("----------------------")
+            return output
+        return wrapper
+    return decorator
+
+def ti_system_only(func):
+    def wrapper(*args, **kwargs):
+        # Replace 'CORRECT_ENVIRONMENT' with the correct environment value
+        if sys.platform == 'TI-Nspire':
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                # Swallow the error and print a message instead
+                print("An error occurred: {}".format(e))
+        else:
+            print("This function can only be executed on the correct environment.")
+    return wrapper
