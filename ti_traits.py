@@ -151,7 +151,7 @@ class _TypeTraits:
 
 
 class _TiStringTraits(_TypeTraits):
-    
+
     ti_type_mapping = {
         'col_vec': TiColVec,
         'row_vec': TiRowVec,
@@ -159,7 +159,7 @@ class _TiStringTraits(_TypeTraits):
         'mat': TiMat,
         'list': TiList
     }
-    
+
     def __init__(self, string: str) -> None:
         super().__init__(string)
 
@@ -235,15 +235,15 @@ class _TiStringTraits(_TypeTraits):
 
 
 class _PyStringTraits(_TypeTraits):
-    
+
     ti_type_mapping = {
-        'col_vec': TiColVec,
-        'row_vec': TiRowVec,
-        'vec': TiVec,
-        'mat': TiMat,
-        'list': TiList
+        'col_vec': PyStrColVec,
+        'row_vec': PyStrRowVec,
+        'vec': PyStrVec,
+        'mat': PyStrMat,
+        'list': PyStrList
     }
-    
+
     def __init__(self, string) -> None:
         super().__init__(string)
 
@@ -336,7 +336,7 @@ class _PyStringTraits(_TypeTraits):
 
 
 class _PyTraits(_TypeTraits):
-    
+
     py_type_mapping = {
         'col_vec': PyColVec,
         'row_vec': PyRowVec,
@@ -344,7 +344,7 @@ class _PyTraits(_TypeTraits):
         'mat': PyMat,
         'list': PyList
     }
-    
+
     def __init__(self, object) -> None:
         super().__init__(object)
 
@@ -382,7 +382,7 @@ class _PyTraits(_TypeTraits):
             return dims
         return Dimensions(len(self.data), len(self.data[0]))
 
-    def deduce_type(self):       
+    def deduce_type(self):
         return self.py_type_mapping.get(self._weak_type, None)
 
 
@@ -440,13 +440,25 @@ class TraitsReport:
         return TraitsReport(obj).strongest
 
 
+def is_type(obj: any, type: (PyType, PyStrType, TiType), usesub=False) -> bool:
+    usesub = True if type is PyMat else usesub
+    report = TraitsReport.get_strongest(obj)
+    if report is None:
+        print("Unable to determine type of:\n{}".format(obj))
+        return False
+    if usesub:
+        return issubclass(report.strong_type, type)
+    return report.strong_type == type
+
+
 if __name__ == '__main__':
-    
-    
+
     pymat = [[1, "2x", 3], [4, 5, 6]]
     pycol = [[1], [2], [3]]
     pyrow = [[1, 2, 3]]
     pylst = [1, 2, 3]
+    pystrmat = '[[1, 2x, 3], [4, 5, 6]]'
+    pystrlst = '[1, 2x, 3]'
     tilst = '{1, 2x, 3}'
     timat = '[[1, 2x, 3][4, 5, 6]]'
     ticol = '[[1][2][3]]'
@@ -460,35 +472,42 @@ if __name__ == '__main__':
     pycol_report = TraitsReport.get_strongest(pycol)
     ticol_report = TraitsReport.get_strongest(ticol)
     tirow_report = TraitsReport.get_strongest(tirow)
+    pystrmat_report = TraitsReport.get_strongest(pystrmat)
+    pystrlst_report = TraitsReport.get_strongest(pystrlst)
 
-    assert(pymat_report.is_mat)
-    assert(pylst_report.is_list)
-    assert(tilst_report.is_list)
-    assert(timat_report.is_mat)
-    assert(pyrow_report.is_row_vec)
-    assert(pycol_report.is_col_vec)
-    assert(ticol_report.is_col_vec)
-    assert(tirow_report.is_row_vec)
-    
-    assert(pymat_report.weak_type == 'mat')
-    assert(pylst_report.weak_type == 'list')
-    assert(tilst_report.weak_type == 'list')
-    assert(timat_report.weak_type == 'mat')
-    assert(pyrow_report.weak_type == 'row_vec')
-    assert(pycol_report.weak_type == 'col_vec')
-    assert(pycol_report.weak_type == 'col_vec')
-    assert(pycol_report.weak_type == 'col_vec')
-    assert(ticol_report.weak_type == 'col_vec')
-    assert(tirow_report.weak_type == 'row_vec')
-    
-    
-    assert(pymat_report.strong_type == PyMat)
-    assert(pylst_report.strong_type == PyList)
-    assert(tilst_report.strong_type == TiList)
-    assert(timat_report.strong_type == TiMat)
-    assert(pyrow_report.strong_type == PyRowVec)
-    assert(pycol_report.strong_type == PyColVec)
-    assert(ticol_report.strong_type == TiColVec)
-    assert(tirow_report.strong_type == TiRowVec)
-    
+    assert (pymat_report.is_mat)
+    assert (pylst_report.is_list)
+    assert (tilst_report.is_list)
+    assert (timat_report.is_mat)
+    assert (pyrow_report.is_row_vec)
+    assert (pycol_report.is_col_vec)
+    assert (ticol_report.is_col_vec)
+    assert (tirow_report.is_row_vec)
+    assert (pystrmat_report.is_mat)
+    assert (pystrlst_report.is_list)
+
+    assert (pymat_report.weak_type == 'mat')
+    assert (pylst_report.weak_type == 'list')
+    assert (tilst_report.weak_type == 'list')
+    assert (timat_report.weak_type == 'mat')
+    assert (pyrow_report.weak_type == 'row_vec')
+    assert (pycol_report.weak_type == 'col_vec')
+    assert (pycol_report.weak_type == 'col_vec')
+    assert (pycol_report.weak_type == 'col_vec')
+    assert (ticol_report.weak_type == 'col_vec')
+    assert (tirow_report.weak_type == 'row_vec')
+    assert (pystrmat_report.weak_type == 'mat')
+    assert (pystrlst_report.weak_type == 'list')
+
+    assert (pymat_report.strong_type == PyMat)
+    assert (pylst_report.strong_type == PyList)
+    assert (tilst_report.strong_type == TiList)
+    assert (timat_report.strong_type == TiMat)
+    assert (pyrow_report.strong_type == PyRowVec)
+    assert (pycol_report.strong_type == PyColVec)
+    assert (ticol_report.strong_type == TiColVec)
+    assert (tirow_report.strong_type == TiRowVec)
+    assert (pystrmat_report.strong_type == PyStrMat)
+    assert (pystrlst_report.strong_type == PyStrList)
+
     print('all assertions passed')
