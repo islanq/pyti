@@ -110,9 +110,6 @@ class Frac:
     def __int__(self) -> int:
         return int(self.approx)
 
-    def __str__(self) -> str:
-        return "{}/{}".format(self.n, self.d) if self.approx != int(self) else str(int(self))
-
     def __tuple__(self) -> tuple:
         return (self.n, self.d)
 
@@ -121,6 +118,9 @@ class Frac:
             'numerator': self.n,
             'denominator': self.d
         }
+
+    def __str__(self) -> str:
+        return "{}/{}".format(self.n, self.d) if self.approx != int(self) else str(int(self))
 
     def __repr__(self):
         return "{}/{}".format(self.n, self.d) if self.approx != int(self) else str(int(self))
@@ -131,6 +131,9 @@ class Frac:
         new_n = self._n * other._d + other._n * self._d
         new_d = self._d * other._d
         return Frac(new_n / new_d)
+
+    def __abs__(self):
+        return abs(self.n / self.d)
 
     def __radd__(self, other):
         return self.__add__(other)
@@ -242,3 +245,16 @@ class Frac:
     def __iter__(self):
         yield self.n
         yield self.d
+
+
+def _perform_tests():
+    one_third = 0.33333333333
+
+    assert Frac(one_third) == one_third
+    assert tuple(Frac(one_third)) == (1, 3)
+    assert str(Frac(one_third)) == "1/3"
+    assert abs(Frac(one_third) - one_third) < 0.000001
+
+
+if __name__ == '__main__':
+    _perform_tests()
