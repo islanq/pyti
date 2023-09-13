@@ -1,7 +1,7 @@
 import sys
 
 if sys.platform == 'win32':
-    sys.path.extend(['../lib/', './lib/', '../'])
+    sys.path.extend(['../lib/', './lib/', '../', '.'])
     # exec(open('__init__.py').read())
     readST = None
     writeST = None
@@ -13,9 +13,30 @@ else:
     from ti_system import readST, writeST
     readst = readST
     writest = writeST
-
+from wrappers import ti_system_only
 
 _assignment_operators = [':=', '→']
+
+def ti_system_verbose(func=None, *, func_id=None):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            if sys.platform == 'TI-Nspire':
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    # Swallow the error and print a message instead
+                    msg = "An error occurred in function '{func_id or func.__name__}': {}".format(e)
+                    print(msg)
+            else:
+                msg = "This function '{} or {}' can only be executed on the correct environment.".format(func_id, func.__name__)
+                print(msg)
+        return wrapper
+    
+    if func is None:
+        return decorator
+    else:
+        return decorator(func)
+
 
 
 def is_ti_type(obj) -> bool:
@@ -59,7 +80,7 @@ def get_var_mat() -> 'TiMatrix':
 def _remove_none_args(*args) -> tuple:
     return tuple(arg for arg in args if arg is not None)
 
-
+@ti_system_only
 def tiexec(cmd_str_or_func_name, *args, write=False) -> any:
     args = _remove_none_args(*args)
     if write:
