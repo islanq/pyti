@@ -40,7 +40,7 @@ class PyMat(PyType):
         super().__init__(data)
 
 
-class PyVec(PyType):
+class PyVec(PyMat):
     def __init__(self, data: list):
         super().__init__(data)
 
