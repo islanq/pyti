@@ -5,10 +5,10 @@ if sys.platform == 'win32':
 
 from polyfill import is_numeric as isnum
 from wrappers import debug_in_out
-
+from ti_formatting import most_accurate
 from collections import namedtuple
 
-MatrixDimnesions = namedtuple('MatrixDimnesions', ['rows', 'cols'])
+Dimensions = namedtuple('Dimensions', ['rows', 'cols'])
 
 
 def flatten(lst):
@@ -38,8 +38,12 @@ def flatten(lst):
     return lst
 
 
+def apply_percise_numbers(matrix):
+    return [[most_accurate(elem) for elem in row] for row in matrix]
+    
+
 @debug_in_out(enabled=False)
-def convert_element(x):
+def convert_element(x, bool_as_string = False):
     """_summary_
     converts an element to a numeric type if possible
     Args:
@@ -49,10 +53,10 @@ def convert_element(x):
         _type_: _description_ numeric type if possible, or a trimmed string
     """
     if not isinstance(x, str):
-        x = str(x).strip()
+        x = str(x)
         # if "−" in x:
         #     x.replace("−", "-")
-
+    x = x.strip()
     if isnum(x):
         try:
             floating = float(x)
@@ -64,9 +68,10 @@ def convert_element(x):
         except ValueError:
             pass
     else:
-        if x == 'true':
+        
+        if x == 'true' or x == 'True':
             return True
-        elif x == 'false':
+        elif x == 'false' or x == 'False':
             return False
         return x.strip('"\'')
 
@@ -182,7 +187,7 @@ def new_matrix(rows: int, cols: int, fill: int = 0):
 def get_matrix_dimensions(x):
     if not is_matrix(x):
         return None
-    return MatrixDimnesions(len(x), len(x[0]))
+    return Dimensions(len(x), len(x[0]))
 
 
 def list_is_empty(x):
@@ -229,9 +234,9 @@ def _perform_tests():
     assert get_symbolic_indices(matrix_symbolic) == [(0, 2), (2, 1)]
 
     # assert matrix dimensions
-    assert get_matrix_dimensions(matrix) == MatrixDimnesions(3, 3)
-    assert get_matrix_dimensions(col_vec) == MatrixDimnesions(3, 1)
-    assert get_matrix_dimensions(row_vec) == MatrixDimnesions(1, 3)
+    assert get_matrix_dimensions(matrix) == Dimensions(3, 3)
+    assert get_matrix_dimensions(col_vec) == Dimensions(3, 1)
+    assert get_matrix_dimensions(row_vec) == Dimensions(1, 3)
 
     print("{}: All tests passed!".format(__file__.split('\\')[-1]))
 
