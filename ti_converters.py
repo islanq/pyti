@@ -1,9 +1,9 @@
-from wrappers import debug_in_out
-import sys
 
+import sys
 if sys.platform == 'win32':
     sys.path.extend(['../lib/', './lib/', '../', '.'])
 
+from wrappers import debug_in_out
 from polyfill import is_numeric, create_varied_sequence
 from ti_traits import TraitsReport
 from matrix_tools import flatten, convert_element
@@ -109,13 +109,11 @@ def _convert_to_py_brackets(x):
 def _make_common_type(x):
     if not isinstance(x, str):
         x = str(x).strip()
-    str_strip = _strip_lead_trail_brackets(x)
-    str_norm = str_strip.replace(' ', '')
-    return str_norm
-
-
+    no_space = x.replace(' ', '')
+    no_lines = no_space.replace(r'\n', '')
+    return _strip_lead_trail_brackets(no_lines)
+    
 # Py Converters
-
 
 @debug_in_out(enabled=False)
 def to_py_mat(x, elemen_per_row: int = None, fill: int = 0) -> list:
@@ -203,6 +201,11 @@ def to_ti_row_vec(x) -> str:
         raise e
 
 
+def parse_list(input):
+    input = str(input).strip().replace(',', '],[').replace(r'\n', '')
+    return to_py_list(input)
+    
+
 def parse_matrix(input, col_vec=False):
     input = str(input).strip().replace(';', '],[')
     return to_py_col_vec(input) if col_vec else to_py_mat(input)
@@ -232,22 +235,22 @@ def parse_matrix_iter(input_str):
     return matrix
 
 
-def append_vectors(column_vectors):
-    # Determine the number of rows (length of any column vector)
-    num_rows = len(column_vectors[0])
+# def append_vectors(column_vectors):
+#     # Determine the number of rows (length of any column vector)
+#     num_rows = len(column_vectors[0])
 
-    # Initialize an empty result matrix with the same number of rows
-    result_matrix = [[] for _ in range(num_rows)]
+#     # Initialize an empty result matrix with the same number of rows
+#     result_matrix = [[] for _ in range(num_rows)]
 
-    # Append each column vector to the result matrix
-    for col_vector in column_vectors:
-        if len(col_vector) != num_rows:
-            raise ValueError(
-                "All column vectors must have the same number of rows.")
-        for i in range(num_rows):
-            result_matrix[i].append(col_vector[i])
+#     # Append each column vector to the result matrix
+#     for col_vector in column_vectors:
+#         if len(col_vector) != num_rows:
+#             raise ValueError(
+#                 "All column vectors must have the same number of rows.")
+#         for i in range(num_rows):
+#             result_matrix[i].append(col_vector[i])
 
-    return result_matrix
+#     return result_matrix
 
 
 def append_vectors(mat_or_column_vector, column_vector=None):
