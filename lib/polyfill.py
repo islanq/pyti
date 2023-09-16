@@ -162,3 +162,18 @@ def get_max_between(string: str, head: str, tail: str, pattern: str = ' ') -> in
                 max_len = max(max_len, len(substring_between))
     
     return max_len
+
+
+def map_replace(string, **replacement_map):
+    """_summary_
+
+    Args:
+        string (_type_): _description_
+        replacement_map (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    for old, new in replacement_map.items():
+        string = string.replace(old, new)
+    return string
