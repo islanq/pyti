@@ -198,6 +198,19 @@ def is_flat_list(x):
     return isinstance(x, list) and len(x) > 0 and not isinstance(x[0], list)
 
 
+def identity_matrix(n):
+    """
+    Create an identity matrix of size n x n.
+    
+    Parameters:
+    n (int): The number of rows and columns
+
+    Returns:
+    list of list of int/float: The identity matrix
+    """
+    return [[1 if i == j else 0 for j in range(n)] for i in range(n)]
+
+
 def _perform_tests():
     col_vec = [[1], [2], [3]]
     row_vec = [[1, 2, 3]]
