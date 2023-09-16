@@ -52,10 +52,14 @@ CharScripts = namedtuple('CharScripts', ['char', 'super', 'sub'])
 
 
 def char_to_superscript(char):
+    if not isinstance(char, str):
+        char = str(char)
     return superscript_mapping.get(char, char)
 
 
 def char_to_subscript(char):
+    if not isinstance(char, str):
+        char = str(char)
     return subscript_mapping.get(char, char)
 
 
@@ -67,7 +71,9 @@ def has_subscript(char):
     return char in subscript_mapping
 
 
-def char_to_superscript_ord(char):
+def char_superscript(char):
+    if not isinstance(char, str):
+        char = str(char)
     if char in superscript_mapping:
         return superscript_mapping[char]
     elif char.isnumeric():
@@ -76,12 +82,12 @@ def char_to_superscript_ord(char):
         return char
 
 
-def char_to_subscript_ord(char):
+def char_subscript(char):
+    if not isinstance(char, str):
+        char = str(char)
     if char in subscript_mapping:
         return subscript_mapping[char]
     elif char.isnumeric():
         return ''.join([chr(ord(digit) + 8320) for digit in char])
     else:
         return char
-
-
