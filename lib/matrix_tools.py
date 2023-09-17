@@ -1,4 +1,5 @@
 import sys
+from frac import Frac
 
 if sys.platform == 'win32':
     sys.path.extend(['../lib/', './lib/', '../', '.'])
@@ -40,10 +41,10 @@ def flatten(lst):
 
 def apply_percise_numbers(matrix):
     return [[most_accurate(elem) for elem in row] for row in matrix]
-    
+
 
 @debug_in_out(enabled=False)
-def convert_element(x, bool_as_string = False):
+def convert_element(x):
     """_summary_
     converts an element to a numeric type if possible
     Args:
@@ -52,6 +53,8 @@ def convert_element(x, bool_as_string = False):
     Returns:
         _type_: _description_ numeric type if possible, or a trimmed string
     """
+    if isinstance(x, Frac):
+        return float(x)
     if not isinstance(x, str):
         x = str(x)
         # if "−" in x:
@@ -68,7 +71,7 @@ def convert_element(x, bool_as_string = False):
         except ValueError:
             pass
     else:
-        
+
         if x == 'true' or x == 'True':
             return True
         elif x == 'false' or x == 'False':
@@ -201,7 +204,7 @@ def is_flat_list(x):
 def identity_matrix(n):
     """
     Create an identity matrix of size n x n.
-    
+
     Parameters:
     n (int): The number of rows and columns
 
