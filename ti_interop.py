@@ -17,6 +17,7 @@ from wrappers import ti_system_only
 
 _assignment_operators = [':=', '→']
 
+
 def ti_system_verbose(func=None, *, func_id=None):
     def decorator(func):
         def wrapper(*args, **kwargs):
@@ -25,18 +26,19 @@ def ti_system_verbose(func=None, *, func_id=None):
                     return func(*args, **kwargs)
                 except Exception as e:
                     # Swallow the error and print a message instead
-                    msg = "An error occurred in function '{func_id or func.__name__}': {}".format(e)
+                    msg = "An error occurred in function '{func_id or func.__name__}': {}".format(
+                        e)
                     print(msg)
             else:
-                msg = "This function '{} or {}' can only be executed on the correct environment.".format(func_id, func.__name__)
+                msg = "This function '{} or {}' can only be executed on the correct environment.".format(
+                    func_id, func.__name__)
                 print(msg)
         return wrapper
-    
+
     if func is None:
         return decorator
     else:
         return decorator(func)
-
 
 
 def is_ti_type(obj) -> bool:
@@ -53,8 +55,12 @@ class TiUninitializedVariableError(NameError):
 
 
 def clear():
-    """Clears the screen of the the python console"""
-    ti_system.disp_clr()
+    if sys.platform == 'win32':
+        import os
+        os.system('cls')
+    else:
+        """Clears the screen of the the python console"""
+        ti_system.disp_clr()
 
 
 def _string_all_args(*args):
@@ -79,6 +85,7 @@ def get_var_mat() -> 'TiMatrix':
 
 def _remove_none_args(*args) -> tuple:
     return tuple(arg for arg in args if arg is not None)
+
 
 @ti_system_only
 def tiexec(cmd_str_or_func_name, *args, write=False) -> any:
