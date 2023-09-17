@@ -8,6 +8,7 @@ from polyfill import is_numeric, create_varied_sequence
 from ti_traits import TraitsReport
 from matrix_tools import flatten, convert_element
 from dummy_types import *
+from polyfill import map_replace
 
 _comma_inclusive_variations = create_varied_sequence('],', '[', max=10)
 _comma_exclusive_variations = create_varied_sequence(']', '[', max=10)
@@ -32,11 +33,11 @@ def _strip_lead_trail_brackets(string):
 
 
 def _strip_quotes(string):
-    if "'" in string:
-        string = string.replace("'", "")
-    if '"' in string:
-        string = string.replace('"', '')
-    return string
+    replacements = {
+        "'": '',
+        '"': ''
+    }
+    return map_replace(string, replacements)
 
 
 def _list_to_mat(lst, num_cols: int = 1, fill: (int, str) = 0):
@@ -94,7 +95,7 @@ def _mat_to_mat(mat, elem_per_row: int, fill: int = 0):
     return new_mat
 
 
-def _remove_internal_brackets(x):
+def _remove_inner_brackets(x):
     return x.replace('][', ',').replace('],[', ',')
 
 
@@ -112,8 +113,9 @@ def _make_common_type(x):
     no_space = x.replace(' ', '')
     no_lines = no_space.replace(r'\n', '')
     return _strip_lead_trail_brackets(no_lines)
-    
+
 # Py Converters
+
 
 @debug_in_out(enabled=False)
 def to_py_mat(x, elemen_per_row: int = None, fill: int = 0) -> list:
@@ -137,7 +139,7 @@ def to_py_mat(x, elemen_per_row: int = None, fill: int = 0) -> list:
 def to_py_list(x) -> list:
     try:
         str_comm = _make_common_type(x)
-        str_rmbr = _remove_internal_brackets(str_comm)
+        str_rmbr = _remove_inner_brackets(str_comm)
         str_strip = _strip_quotes(str_rmbr)
         elements = str_strip.split(',')
         return [convert_element(elem.strip()) for elem in elements]
@@ -162,7 +164,7 @@ def to_py_col_vec(x):
 def to_ti_list(x) -> str:
     try:
         str_comm = _make_common_type(x)
-        str_rmbr = _remove_internal_brackets(str_comm)
+        str_rmbr = _remove_inner_brackets(str_comm)
         str_strip = _strip_quotes(str_rmbr)
         return '{' + str_strip + '}'
     except Exception as e:
@@ -204,7 +206,7 @@ def to_ti_row_vec(x) -> str:
 def parse_list(input):
     input = str(input).strip().replace(',', '],[').replace(r'\n', '')
     return to_py_list(input)
-    
+
 
 def parse_matrix(input, col_vec=False):
     input = str(input).strip().replace(';', '],[')
@@ -233,24 +235,6 @@ def parse_matrix_iter(input_str):
         matrix_row = [int(val) for val in values]
         matrix.append(matrix_row)
     return matrix
-
-
-# def append_vectors(column_vectors):
-#     # Determine the number of rows (length of any column vector)
-#     num_rows = len(column_vectors[0])
-
-#     # Initialize an empty result matrix with the same number of rows
-#     result_matrix = [[] for _ in range(num_rows)]
-
-#     # Append each column vector to the result matrix
-#     for col_vector in column_vectors:
-#         if len(col_vector) != num_rows:
-#             raise ValueError(
-#                 "All column vectors must have the same number of rows.")
-#         for i in range(num_rows):
-#             result_matrix[i].append(col_vector[i])
-
-#     return result_matrix
 
 
 def append_vectors(mat_or_column_vector, column_vector=None):
