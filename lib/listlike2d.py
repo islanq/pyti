@@ -6,25 +6,24 @@ Dimensions = namedtuple('Dimensions', ['rows', 'cols'])
 
 class ListLike2D:
 
+    def __init__(self, data, cols=None, fill=0) -> None:
 
-    def __init__(self, data, cols = None, fill = 0) -> None:
-        
         # we are specifying the number of rows and cols
         # and populating the matrix with the fill value
         if isinstance(data, int) and isinstance(cols, int):
             self.data = [[fill] * cols for _ in range(data)]
         elif isinstance(data, list) and isinstance(cols, int):
-            
+
             lst = flatten(data)
             length = len(lst)
-            
+
             if length % cols == 0:
                 iters = length // cols
             else:
                 iters = length // cols + 1
-                
+
             self.data = []
-            
+
             for i in range(iters):
                 row = []
                 for j in range(cols):
@@ -35,7 +34,7 @@ class ListLike2D:
                     else:
                         row.append(fill)
                 self.data.append(row)
-                
+
         elif isinstance(data, int) and not cols:
             raise ValueError("If data is an int, cols must be specified")
         elif isinstance(data, list) and not cols:
@@ -48,17 +47,17 @@ class ListLike2D:
                 raise ValueError("All rows must be the same length")
             else:
                 self.data = data
-        
+
         # convert all elements to numeric if possible
         for row in self.data:
             for i in range(len(row)):
                 row[i] = convert_element(row[i])
-                
+
         self._dims = None
         self._current = 0
 
 
-#region properties
+# region properties
 
     @property
     def dims(self) -> Dimensions:
@@ -66,30 +65,26 @@ class ListLike2D:
             self._set_dims()
         return self._dims
 
-
     @property
     def is_vector(self) -> bool:
         return self.dims.cols == 1 or self.dims.rows == 1
-
 
     @property
     def is_row_vector(self) -> bool:
         return self.dims.rows == 1
 
-
     @property
     def is_matrix(self) -> bool:
-        return not self.is_vector and self.dims.rows > 1 and self.dims.cols > 1 
-
+        return not self.is_vector and self.dims.rows > 1 and self.dims.cols > 1
 
     @property
     def is_col_vector(self) -> bool:
         return self.dims.cols == 1
 
-#endregion properties
+# endregion properties
 
 
-#region dunder methods
+# region dunder methods
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, list):
@@ -100,18 +95,15 @@ class ListLike2D:
             return False
         return self.data == other.data
 
-
     def __len__(self) -> int:
         return len(self.data)
 
-    
-    def __getitem__(self, indices: (tuple,int)) -> any:
+    def __getitem__(self, indices: (tuple, int)) -> any:
         if isinstance(indices, tuple):
             return self.data[indices[0]][indices[1]]
         if isinstance(indices, int):
             return self.data[indices]
         raise TypeError("indices must be an int or a tuple of ints")
-
 
     def __setitem__(self, indices: (tuple, int), value: any) -> None:
         if isinstance(indices, tuple):
@@ -120,44 +112,38 @@ class ListLike2D:
             self.data[indices] = value
         raise TypeError("indices must be an int or a tuple of ints")
 
-
     def __iter__(self) -> 'ListLike2D':
         self._current = 0
         return self
 
-
     def __next__(self) -> any:
         if self._current >= len(self):
             raise StopIteration
-        
+
         item = self[self._current]
         self._current += 1
         return item
 
-
     def __list__(self) -> list:
         return self.data
-    
 
     def __str__(self) -> str:
         return mat_repr(self.data)
-
 
     def __repr__(self) -> str:
         return mat_repr(self.data)
 
 
-#endregion dunder methods
+# endregion dunder methods
 
-        
+
     def clone_data(self) -> list:
         """_summary_ returns a copy of the internal data structure.
         Returns:
             _type_: _description_
         """
         return [row[:] for row in self.data]
-    
-        
+
     def clone(self) -> 'ListLike2D':
         """_summary_ returns a copy of the matrix
         of the internal data structure.
@@ -165,41 +151,38 @@ class ListLike2D:
         Returns:
             _type_: _description_
         """
+        return self.__class__(self.data)
         return ListLike2D(self.data)
 
-
-    def T(self, count: int = 1) -> 'ListLike2D':
+    def T(self, count: int = 1):
         for _ in range(count):
             self.transpose()
-        return self
-
+        return self.__class__(self.data)
 
     def set_column(self, col: int, values: list) -> None:
         if len(values) != self.dims.rows:
-            raise ValueError("values must have length {}".format(self.dims.rows))
+            raise ValueError(
+                "values must have length {}".format(self.dims.rows))
         values = flatten(values)
         for row in range(self.dims.rows):
-            
+
             self.data[row][col] = values[row]
         return self
 
-
     def set_row(self, row: int, values: list) -> 'ListLike2D':
         if len(values) != self.dims.cols:
-            raise ValueError("values must have length {}".format(self.dims.cols))
+            raise ValueError(
+                "values must have length {}".format(self.dims.cols))
         self.data[row] = values
         return self
 
-
     def _set_dims(self) -> None:
         self._dims = Dimensions(len(self.data), len(self.data[0]))
-   
 
     def _flatten(self):
         self.data = flatten(self.data)
         self._set_dims()
         return self
-
 
     def append(self, list_like):
         """
@@ -214,7 +197,6 @@ class ListLike2D:
             self.append_col(list_like.data)
         else:
             self.append_row(list_like.data)
-            
 
     def append_row(self, row: list):
         # if row is a list of lists, flatten it
@@ -230,7 +212,6 @@ class ListLike2D:
         self._set_dims()
         return self
 
-
     def append_col(self, col: list):
         # if col is a list of lists, flatten it
         if hasattr(col, 'data'):
@@ -245,12 +226,23 @@ class ListLike2D:
             self.data[i].append(col[i])
         self._set_dims()
         return self
-      
-        
+
+    def append_left(self, other_matrix):
+        for i, row in enumerate(self.data):
+            self.data[i] = other_matrix[i] + row
+        self._set_dims()
+        return self
+
+    def append_right(self, other_matrix):
+        for i, _ in enumerate(self.data):
+            self.data[i] += other_matrix[i]
+        self._set_dims()
+        return self
+
     def reshape(self, rows: int = None, cols: int = None, fill: int = 0) -> None:
         # Flatten the data
         data = flatten(self.data)
-        
+
         # Determine new dimensions
         if rows is not None and cols is None:
             cols = len(data) // rows + (1 if len(data) % rows != 0 else 0)
@@ -258,10 +250,11 @@ class ListLike2D:
             rows = len(data) // cols + (1 if len(data) % cols != 0 else 0)
         elif rows is not None and cols is not None:
             if rows * cols < len(data):
-                raise ValueError("rows * cols must be greater than or equal to the number of elements in the matrix")
+                raise ValueError(
+                    "rows * cols must be greater than or equal to the number of elements in the matrix")
         else:
             raise ValueError("Either rows or cols must be specified")
-        
+
         # Reshape the data
         self.data = []
         for i in range(rows):
@@ -273,19 +266,18 @@ class ListLike2D:
                 else:
                     row.append(data[index])
             self.data.append(row)
-        
+
         # Set the new dimensions
         self._set_dims()
         return self
 
-
     def transpose(self):
         # swap rows and columns
-        data = [[self.data[j][i] for j in range(self.dims.rows)] for i in range(self.dims.cols)]
+        data = [[self.data[j][i]
+                 for j in range(self.dims.rows)] for i in range(self.dims.cols)]
         self.data = data
         self._set_dims()
         return self
-
 
     def get_cols(self, *cols):
         # return the specific column
@@ -294,13 +286,11 @@ class ListLike2D:
         if all(isinstance(col, int) for col in cols):
             return ListLike2D([[self.data[i][col] for col in cols] for i in range(self.dims.rows)]).T(2)
 
-
     def get_rows(self, *rows):
-        if len (rows) == 1 and isinstance(rows[0], int):
+        if len(rows) == 1 and isinstance(rows[0], int):
             return ListLike2D(self.data[rows[0]])
         if all(isinstance(row, int) for row in rows):
             return ListLike2D([self.data[row] for row in rows])
-
 
     def shift_left(self, insert=False):
         new_data = [row[1:] + [row[0]] for row in self.data]
@@ -311,7 +301,6 @@ class ListLike2D:
         self._set_dims()
         return self
 
-
     def shift_up(self, insert=False):
         new_data = [self.data[i - 1] for i in range(len(self.data))]
         if insert:
@@ -320,57 +309,128 @@ class ListLike2D:
         self._set_dims()
         return self
 
-
     def shift_down(self, insert=False):
-        new_data = [self.data[(i + 1) % len(self.data)] for i in range(len(self.data))]
+        new_data = [self.data[(i + 1) % len(self.data)]
+                    for i in range(len(self.data))]
         if insert:
             new_data.insert(0, [0] * len(self.data[0]))
         self.data = new_data
         self._set_dims()
         return self
 
-
     def shift_right(self, insert=False):
         rows, cols = self.dims
-        
+
         # Shifting each row to the right by one position
         new_data = [[row[-1]] + row[:-1] for row in self.data]
-        
+
         # Inserting a new column of zeros at the beginning if insert is True
         if insert:
             for row in new_data:
                 row.insert(0, 0)
-        
+
         # Updating the data attribute with the new data
         self.data = new_data
         self._set_dims()
         return self
 
-
     def swap_rows(self, row1, row2):
         if row1 < 0 or row1 >= self.dims.rows:
-            raise ValueError("row1 must be between 0 and {}".format(self.dims.rows - 1))
+            raise ValueError(
+                "row1 must be between 0 and {}".format(self.dims.rows - 1))
         self.data[row1], self.data[row2] = self.data[row2], self.data[row1]
         return self
 
-
     def swap_columns(self, col1, col2):
         if col1 < 0 or col1 >= self.dims.cols:
-            raise ValueError("col1 must be between 0 and {}".format(self.dims.cols - 1))
+            raise ValueError(
+                "col1 must be between 0 and {}".format(self.dims.cols - 1))
         if col1 == col2:
             return self
         for row in self.data:
             row[col1], row[col2] = row[col2], row[col1]
-        return self    
- 
-    
-# ll = ListLike2D([
-#     [1,2,3],
-#     [4,5,6],
-#     [7,8,9]
-# ])
+        return self
 
+    def insert_column(self, column, index: int) -> 'ListLike2D':
+        """
+        Insert a column in a matrix at the specified index.
 
+        Parameters:
+        matrix (list of list of int): The input matrix
+        column (list of int): The column to be inserted
+        index (int): The index at which to insert the column
 
+        Returns:
+        list of list of int: The matrix with the inserted column
+        """
+        # Verify the input
+        if index < 0 or index > len(self.data[0]):
+            raise ValueError("Invalid index")
+        if len(column) != len(self.data):
+            raise ValueError("Column length does not match matrix row size")
 
-# print(ll.swap_columns(0, 2))
+        # Create a new matrix with the inserted column
+        new_matrix = []
+        for i, row in enumerate(self.data):
+            new_row = row[:index] + [column[i]] + row[index:]
+            new_matrix.append(new_row)
+
+        self.data = new_matrix
+        self._set_dims()
+        return self
+
+    def remove_column(self, index: int) -> 'ListLike2D':
+        """
+        Remove a column from a matrix at the specified index.
+
+        Parameters:
+        matrix (list of list of int): The input matrix
+        index (int): The index of the column to remove
+
+        Returns:
+        list of list of int: The matrix with the column removed
+        """
+        # Verify the input
+        if index < 0 or index >= len(self.data[0]):
+            raise ValueError("Invalid index")
+
+        # Create a new matrix with the column removed
+        new_matrix = [row[:index] + row[index + 1:] for row in self.data]
+        self.data = new_matrix
+        self._set_dims()
+        return self
+
+    def flip_horizontal(self) -> 'ListLike2D':
+        """
+        Flip a matrix horizontally.
+
+        Parameters:
+        matrix (list of list of int): The input matrix
+
+        Returns:
+        list of list of int: The horizontally flipped matrix
+        """
+        data = self.clone_data()
+        data = [list(reversed(row)) for row in data]
+        self.data = data
+        return self
+
+    def flip_vertical(self) -> 'ListLike2D':
+        """
+        Flip a matrix vertically.
+
+        Parameters:
+        matrix (list of list of int): The input matrix
+
+        Returns:
+        list of list of int: The vertically flipped matrix
+        """
+        data = self.clone_data()
+        data = list(reversed(data))
+        self.data = data
+        return self
+
+    @classmethod
+    def eye(cls, n: int):
+        data = [[1 if i == j else 0 for j in range(n)] for i in range(n)]
+        return cls(data)
