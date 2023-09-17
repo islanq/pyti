@@ -3,21 +3,50 @@ import sys
 
 if sys.platform == 'win32':
     sys.path.extend(['../lib/', './lib/', '../'])
-    
+
 from wrappers import extends_method_names
 from parsing import parse_expression, parse_variables
 from polyfill import is_digit, is_alnum, is_alpha, is_numeric
 from ti_interop import tiexec, is_ti_type
 
 
+def solve(expression,  *vars):
+    if vars is None:
+        return tiexec("solve", expression)
+    else:
+        var = ",".join(vars)
+        var = "{" + var + "}"
+        print('solve({},{})'.format(expression, var))
+    return tiexec('solve({},{})'.format(expression, var))
+
+
+def expand(expression):
+    return tiexec("expand({})".format(expression))
+
+
+def linsolve(expression, *vars):
+    if vars is None:
+        return tiexec("linsolve", expression)
+    else:
+        var = ",".join(vars)
+        var = "{" + var + "}"
+        print('linsolve({},{})'.format(expression, var))
+    return tiexec('linsolve({},{})'.format(expression, var))
+
+
 @extends_method_names
 class TiExpression:
 
-    def __init__(self, expr=None):
+    def __init__(self, expr=None, *vars):
         self.expr_str = expr if isinstance(expr, str) else str(expr)
         if self.expr_str != "":
-            self.expr = parse_expression(self.expr_str)
-            self.vars = parse_variables(self.expr_str)
+            self.expr_str = self.expr_str.replace(" ", "")
+            if vars is not None and len(vars) > 0:
+                named_vars = [str(v).strip() for v in vars]
+            else:
+                named_vars = None
+            # self.expr = parse_expression(self.expr_str, named_vars)
+            self.vars = parse_variables(self.expr_str, named_vars)
         else:
             self.expr = None
             self.vars = None
@@ -105,3 +134,9 @@ class TiExpression:
             return expr_str.expr_str
         else:
             raise TypeError("expr_str must be a string or TiExpression")
+
+    def solve(self, *vars):
+        return TiExpression(solve(self.expr_str, *vars))
+
+    def expand(self):
+        return TiExpression(expand(self.expr_str))
