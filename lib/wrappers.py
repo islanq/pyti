@@ -232,7 +232,8 @@ def debug_in_out(name: str = '', enabled=True):
                 print("----------------------")
                 print("Function: {:<{}}".format(name if name else func.__name__, 10)) 
                 if args:
-                    print("Input args: {}".format(args))
+                    types = [type(arg) for arg in args]
+                    print("Input args: {} w/ types{}".format(args, types))
                 if kwargs:
                     print("Input kwargs:{:<{}}".format(kwargs,24))
             
