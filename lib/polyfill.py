@@ -2,7 +2,8 @@ import re
 from re import search, match, compile
 
 _digit_pat = r'^(-)?\d+$'
-_numeric_pat = r'^(-)?\d+(\.\d+)?$'
+#_numeric_pat = r'^(-)?\d+(\.\d+)?$'
+_numeric_pat = r'^-?\d+(\.\d+)?$'
 _alpha_pat = r'^[a-zA-Z]+$'
 _alnum_pat = r'^(-)?[a-zA-Z0-9.]+$'
 
@@ -14,11 +15,13 @@ _alnum_re = compile(_alnum_pat)
 
 def is_digit(s):
     s = str(s) if not isinstance(s, str) else s
+    
     try:
         return re.match(_digit_re, s) is not None
     except ValueError:
         return match(_digit_re, s) is not None
     finally:
+        
         return match(_digit_pat, s) is not None
 
 
@@ -27,9 +30,11 @@ def is_numeric(s):
     try:
         return re.match(_numeric_re, s) is not None
     except ValueError:
+        print('default re.match failed: {}'.format(s))
         return match(_numeric_re, s) is not None
     finally:
-        return match(_numeric_pat, s) is not None
+        print('is_numeric: Using custom re match in finally')
+        return re.match(_numeric_pat, s) is not None
 
 
 def is_alpha(s):
@@ -163,8 +168,40 @@ def get_max_between(string: str, head: str, tail: str, pattern: str = ' ') -> in
     
     return max_len
 
+def ensure_string(string: str, strip = False) -> str:
+    """_summary_
 
-def map_replace(string, **replacement_map):
+    Args:
+        string (str): _description_
+
+    Returns:
+        str: _description_
+    """
+    if not isinstance(string, str):
+        string = str(string)
+    if strip:
+        string = string.strip()
+    return string
+
+from wrappers import debug_in_out
+
+@debug_in_out(False)
+def remove_all(text: str, *args):
+    """_summary_
+
+    Args:
+        string (str): _description_
+        *args (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    for arg in args:
+            text = text.replace(arg, '')
+    return text
+
+def map_replace(string: str, **replacement_map):
+    string = ensure_string(string)
     """_summary_
 
     Args:
@@ -177,3 +214,6 @@ def map_replace(string, **replacement_map):
     for old, new in replacement_map.items():
         string = string.replace(old, new)
     return string
+
+
+
