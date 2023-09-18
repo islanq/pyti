@@ -1,40 +1,48 @@
 import sys
 if sys.platform == 'win32':
-    sys.path.extend(['../lib/', './lib/', '../'])
-    
+    sys.path.extend(['../lib/', './lib/', '../', '.'])
+
 from ti_expression import TiExpression
 from ti_collections import TiCollections
-from ti_converters import to_py_mat, to_ti_mat
+from ti_converters import *
+from ti_formatting import mat_repr, display_matrix
+from ti_traits import is_type
+from dummy_types import *
+from wrappers import extends_method_names
+from polyfill import is_numeric
+from ti_interop import tiexec
+from matrix_tools import is_matrix, is_column_vector, is_row_vector, get_matrix_dimensions, get_symbolic_indices
 
 if sys.platform == 'TI-Nspire':
-    from wrappers import extends_method_names
     from wrappers import ensure_single_or_paired_type
     from wrappers import ensure_paired_type
     from eval_expr import eval_expr, call_func
-    from polyfill import is_numeric
-else:
-    from lib.wrappers import extends_method_names
-    from lib.polyfill import is_numeric
-from ti_interop import tiexec
 
+from wrappers import debug_in_out
+from collections import namedtuple
+
+Pivot = namedtuple('Pivot', ['row', 'col'])
 
 @extends_method_names
 class TiMatrix(TiCollections):
+    debug_in_out(enabled=True)
 
-    def __init__(self, matrix_or_str: (str, list) = None, rows: int = None):
-        if isinstance(matrix_or_str, int) and rows != None and isinstance(rows, int):
+    def __init__(self, matrix_or_str: (str, list) = None, rows: int = None, fill=0):
+
+        if isinstance(matrix_or_str, int) and rows and isinstance(rows, int):
             matrix_or_str = [
                 [0 for _ in range(matrix_or_str)] for _ in range(rows)]
-        if not matrix_or_str:
-            matrix_or_str = [[]]
+        elif not matrix_or_str:
+            matrix_or_str = [[0]]
+        else:
+            matrix_or_str = to_py_mat(matrix_or_str)
         # self.ti_matrix = self.to_ti_mat(matrix_or_str)
         # self.py_matrix = self.to_py_mat(self.ti_matrix)
         self.ti_matrix = to_ti_mat(matrix_or_str)
         self.py_matrix = to_py_mat(self.ti_matrix)
         self.data = self.py_matrix
-        self.rows = self.row_dim()  # ;len(self.data)
-        # len(self.data[0]) if self.py_matrix else 0
-        self.cols = self.col_dim()
+        self.rows = len(self.data)  # self.row_dim()  #
+        self.cols = len(self.data[0]) if self.py_matrix else 0
         self.square = self.rows == self.cols
         self._current_row = 0
         self._current_col = 0
@@ -55,6 +63,9 @@ class TiMatrix(TiCollections):
         return self.transpose()
 
     def __mul__(self, other):
+        if isinstance(other, list) and len(other) != self.cols:
+            other = other[0]
+
         try:
             return TiMatrix(tiexec("({})*({})".format(self.ti_matrix, other)))
         except TypeError:
@@ -115,8 +126,8 @@ class TiMatrix(TiCollections):
             appended to Matrix1 as new columns.
             Does not alter Matrix1 or Matrix2.
         """
-        if TiCollections.is_py_mat(matrix):
-            matrix = TiCollections.to_ti_mat(matrix)
+        
+        matrix = to_ti_col_vec(matrix)
         return TiMatrix(tiexec("augment", self.ti_matrix + "," + matrix))
 
     def col_augment(self, matrix) -> 'TiMatrix':
@@ -127,10 +138,9 @@ class TiMatrix(TiCollections):
             `py_matrix2 is appended to py_matrix1 as new
             rows`. Does not alter py_matrix1 or py_matrix2
         """
-        if TiCollections.is_py_mat(matrix):
-            matrix = to_ti_mat(matrix)
-            # matrix = TiCollections.to_ti_mat(matrix)
-        return TiMatrix(tiexec("colAugment", self.ti_matrix, matrix))
+        if is_type(matrix, (PyMat, TiList)):
+            ti_col_vec = to_ti_col_vec(matrix)
+        return TiMatrix(tiexec("colAugment", self.ti_matrix, ti_col_vec))
 
     def conj(self) -> 'TiMatrix':
         """
@@ -348,7 +358,7 @@ class TiMatrix(TiCollections):
         sub_matrix = TiCollections.to_ti_mat(row_subtract_values)
         tar_matrix = TiCollections.to_ti_mat(row_subtract_target)
 
-        result_str = self.tiexec(
+        result_str = tiexec(
             "{}-{}*{}".format(tar_matrix, sub_matrix, factor))
         result_row = TiCollections.to_py_mat(result_str)[0]
 
@@ -407,11 +417,15 @@ class TiMatrix(TiCollections):
         return TiMatrix(tiexec("rowSwap", self.ti_matrix, row1, row2))
 
     def get_row(self, row_idx) -> 'TiMatrix':
-        return TiMatrix(self.tiexec("{}[{}]".format(self.ti_matrix, row_idx)))
+        if row_idx > self.rows:
+            print("Row index out of range")
+        return TiMatrix(tiexec("{}[{}]".format(self.ti_matrix, row_idx)))
 
     def get_col(self, col_idx):
+        if col_idx > self.cols:
+            print("Column index out of range")
         args = (self.ti_matrix, 1, col_idx, self.cols, col_idx)
-        return TiMatrix(self.tiexec("subMat", *args))
+        return TiMatrix(tiexec("subMat", *args))
 
     def real(self) -> 'TiMatrix':
         """
@@ -431,15 +445,22 @@ class TiMatrix(TiCollections):
             return TiMatrix(tiexec("rref", self.ti_matrix))
 
     # TODO fix
-    def simult(self, py_coeff_matrix, const_col_vector, tol=None):
-        ti_coeff_matrix = TiCollections.to_ti_mat(py_coeff_matrix)
-        ti_const_vector = TiCollections.to_ti_mat(const_col_vector)
+    def simult(self, const_vector, *args, tol=None):
+        # ti_coeff_matrix = TiCollections.to_ti_mat(py_coeff_matrix)
+        if args:
+            constants = ']['.join([str(arg) for arg in args])
+            constants = str(const_vector) + '][' + constants
+            constants = '[[' + constants + ']]'
+        else:
+            constants = to_py_col_vec(constants)
+            constants = to_ti_mat(constants)
+
         if tol is not None:
-            result_str = tiexec("simult", ti_coeff_matrix +
-                                "," + ti_const_vector + "," + str(tol))
+            result_str = tiexec(
+                "simult", self.ti_matrix + "," + constants + "," + str(tol))
         else:
             result_str = tiexec(
-                "simult", ti_coeff_matrix + "," + ti_const_vector)
+                "simult", self.ti_matrix + "," + constants)
         return TiMatrix(result_str)
 
     def ipart(self) -> 'TiMatrix':
@@ -457,9 +478,72 @@ class TiMatrix(TiCollections):
             on the main diagonal) of squareMatrix.
         """
         return TiExpression(tiexec("trace", self.ti_matrix))
+    
+    def zero_rows(self):
+        return [i+1 for i in range(self.rows) if all(c == 0 for c in self.data[i])]
+    
+    
+        
+        
+    
+    def pivots(self):
+        """
+        Find the pivot positions in a matrix in RREF.
+
+        :param matrix: 2D list of numbers representing the matrix in RREF
+        :return: list of tuples where each tuple contains the row and column index of a pivot
+        """
+        pivot_positions = []
+
+        for i, row in enumerate(self.data):
+            for j, val in enumerate(row):
+                if val == 1:  # We found a pivot in this row
+                    pivot_positions.append(Pivot(i+1, j+1))
+                    break  # Move to the next row
+
+        return pivot_positions
+
+    def rank(self) -> int:
+        return len(self.pivots())
+    
+    def nullity(self) -> int:
+        return self.cols - self.rank()
+
+    def is_numeric(self):
+        return all(isinstance(col, (int, float)) for row in self.data for col in row)
+
+    def is_symbolic(self):
+        return not self.is_numeric()
 
     def __repr__(self):
-        return self.ti_matrix
+        return mat_repr(self.data)
 
     def __str__(self):
         return self.ti_matrix
+
+    def perform_tests():
+        if sys.platform != 'TI-Nspire':
+            print('Testing only available on TI-Nspire')
+            pass
+
+        py_mat = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+        py_mat2 = [[1, 0, 0], [0, 1, 0], [0, 0, 0]]
+        ti_mat = TiMatrix(py_mat)
+        assert ti_mat.is_numeric
+        assert ti_mat.cols == 3
+        assert ti_mat.rows == 3
+        assert ti_mat.square == True
+        assert ti_mat.non_zero_row_count == 3
+        
+        ti_mat2 = TiMatrix(py_mat2)
+        print(ti_mat2.zero_rows())
+        print(ti_mat2.pivots())
+        print(ti_mat2.rank())
+    @staticmethod
+    def eye(size: int) -> 'TiMatrix':
+        return TiMatrix(tiexec("identity", size))
+
+
+if __name__ == '__main__':
+    
+    TiMatrix.perform_tests()    
