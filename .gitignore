@@ -180,3 +180,5 @@ tasks.json
 utils/playground.py
 pyvectorset.py
 utils/check.py
+
+pyvectorset.py

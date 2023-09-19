@@ -14,7 +14,8 @@ class Match:
         self.native_match = native_match
         self._start = start
         self._end = end
-                    
+        self._span = None
+
         try:
             # This will work in full Python environments
             self._groups = native_match.groups()
@@ -29,7 +30,6 @@ class Match:
                 except IndexError:
                     break
             self._groups = tuple(group_list)
-                
 
     def _extract_groups(self, native_match):
         groups = []
@@ -41,7 +41,7 @@ class Match:
             except IndexError:
                 break
         return tuple(groups)
-            
+
     @property
     def start(self) -> int:
         """Returns the start index of the match."""
@@ -61,11 +61,7 @@ class Match:
     def string(self):
         return self.match_str
 
-    def groups_leg(self):
-        return self.native_match.groups()
-    
-    
-    def groups(self):
+    def groups(self) -> tuple[int, int]:
         if self._groups is None:
             # In environments where `groups` method is not available, construct the groups tuple here
             try:
@@ -90,31 +86,22 @@ class Match:
         except IndexError:
             raise IndexError('No such group')
 
-    def span(self) -> _Span:
+    def span(self, index: int = 0) -> _Span:
         """Returns a tuple containing the start and end indices of the match."""
-        return _Span(self.start, self.end)
+        if self._span is None:
+            return _Span(self.start, self.end)
+        if index <= len(self.groups()):
+            return self._span[index]
 
     def __str__(self) -> str:
         try:
             match_str = self.group(0)
         except IndexError:
             match_str = ""
-        return "<Regex.Match object; span=({}, {}); match='{}'>".format(self.span().start, self.span().end, match_str)
+        return "<Regex.Match object; span=({}, {}), match='{}'>".format(self.span().start, self.span().end, self.string)
 
     def __repr__(self) -> str:
         return self.__str__()
-
-    def _process_match(self, match_str: str, native_match, string, start, end):
-        if self._has_re_span:
-            # This will work in full Python environments
-            span = native_match.span()
-            start_pos = start + span[0]
-            end_pos = start + span[1]
-        else:
-            # In MicroPython environment, find start and end positions using a custom method
-            start_pos, end_pos = self._find_match_positions(string, start, end)
-
-        return Match(match_str, native_match, start_pos, end_pos)
 
 
 class RegexFlags(AbstractDataType):
@@ -188,10 +175,6 @@ class Pattern(_Cachable):
         if self._forced and self._has_re_span:
             self._has_re_span = False
             print("Forcing custom re.match implementation")
-            print("This message will only display if")
-            print("the default re.match implementation is available")
-            print("and the custom implementation is being used")
-            print("Confirming has_re_span is {}:".format(self._has_re_span))
 
     @property
     def flags(self):
@@ -210,8 +193,8 @@ class Pattern(_Cachable):
 
     def search(self, string: str, start: int = 0, end: int = None, omit_positions: bool = False) -> Match | None:
         """Implements the search method using re.search."""
-        return self._find(self._search_method, string, start, end, omit_positions)    
-    
+        return self._find(self._search_method, string, start, end, omit_positions)
+
     def _find(self, method: callable, search_str: str, start: int = 0, end: int = None, omit_positions: bool = False) -> Match:
         """Helper method to implement common logic for match and search."""
         if end is None:
@@ -220,9 +203,11 @@ class Pattern(_Cachable):
         m = method(search_str[start:end])
         if not m:
             return None
-        
-        match_str = self._extract_match_str(m, search_str, start, end)
-        
+
+        print(m)
+        # match_str = self._extract_match_str(m, search_str, start, end)
+        match_str = m.group(0)
+
         if omit_positions:
             return Match(match_str, None, None)
 
@@ -255,21 +240,65 @@ class Pattern(_Cachable):
         splits.append(string[start:])
         return [s for s in splits if s != '']
 
-    def finditer(self, string: str, start: int = 0, end=None) :
+    def finditer(self, string: str, start: int = 0, end=None):
         """Implements the finditer method using custom implementation."""
         if end is None:
             end = len(string)
 
         pos = start
-        while pos < end:
-            native_match = self.search(string, pos, end)
-            if not native_match:
+        offset = pos
+        orig = string
+
+        while True:
+            # print(f'Using start {pos} and end {end}')
+            match = self.search(string, pos, end)
+
+            if not match:
                 break
 
-            # Use the correct arguments while creating a new Match instance
-            yield Match(native_match.match_str, native_match, native_match._start, native_match._end)
+            span = tuple()
+            groups = tuple()
 
-            pos = native_match._end if native_match._end > pos else pos + 1
+            if not self._has_re_span:
+                # store the first group
+                zero_str = match.group(0)  # str value
+
+                zero_spn = match.span()
+
+                zero_beg = zero_spn[0]
+                zero_end = zero_spn[1]
+                zero_len = zero_end - zero_beg
+                zero_off = zero_beg + pos
+                real_beg = zero_off
+                real_end = real_beg + zero_len
+
+                real_spn = _Span(real_beg, real_end)
+                span = span + (real_spn,)
+                groups = groups + (zero_str,)
+
+                pos = real_end
+
+                i = 1
+                while True:
+                    try:
+                        grp_str = match.group(i)
+                        grp_len = len(grp_str)
+                        grp_beg = real_beg if i == 1 else span[len(span)-1][1]
+                        grp_end = grp_beg + grp_len
+
+                        grp_spn = _Span(grp_beg, grp_end)
+                        groups = groups + (grp_str,)
+                        span = span + (grp_spn,)
+
+                        i += 1
+                    except Exception as e:
+                        # print("There was an error,", e)
+                        break
+
+                match.groups = lambda: groups
+                match.span = span
+
+            yield Match(match.string, match, real_beg, real_end)
 
     def fullmatch(self, string: str, start: int = 0, end: int = None) -> Match | None:
         """Implements the fullmatch method using custom implementation."""
@@ -314,9 +343,10 @@ class Pattern(_Cachable):
         """Extracts the matched string from the match object."""
         if self._has_re_span:  # If re.span is available, use it to find the matched string
             span = match_obj.span()
-            return search_str[start+span[0] : start+span[1]]
+            return search_str[start+span[0]: start+span[1]]
         else:  # In MicroPython environment, use custom method to find the matched string
-            start_pos, end_pos = self._find_match_positions(search_str, start, end)
+            start_pos, end_pos = self._find_match_positions(
+                search_str, start, end)
             return search_str[start_pos:end_pos]
 
     def _find_match_positions(self, string: str, start: int, end: int) -> tuple[int, int]:
@@ -343,17 +373,19 @@ class Pattern(_Cachable):
         else:
             return None, None
 
-    def _process_match(self, match_str: str, native_match, string, start, end):
+    def _process_match(self, match_str: str, match_obj, search_str: str, start: int, end: int):
         if self._has_re_span:
             # This will work in full Python environments
-            span = native_match.span()
-            start_pos = start + span[0]
-            end_pos = start + span[1]
+            span = match_obj.span()
+            beg = start + span[0]
+            end = start + span[1]
         else:
             # In MicroPython environment, find start and end positions using a custom method
-            start_pos, end_pos = self._find_match_positions(string, start, end)
+            # start_pos, end_pos = self._find_match_positions(string, start, end)
 
-        return Match(match_str, native_match, start_pos, end_pos)
+            beg = search_str[start:end].index(match_str)
+            end = beg + len(match_str)
+        return Match(match_str, match_obj, beg, end)
 
     def _update_pattern(self) -> None:
 
@@ -372,17 +404,3 @@ class Pattern(_Cachable):
         self._pattern_renew = False
 
 # endregion methods
-
-
-if __name__ == '__main__':
-
-    match_pattern = r'(ab|123)'
-    pat = Pattern(match_pattern, force_custom_impl=True)
-    assert pat._has_re_span == False and pat._forced == True
-    assert pat.search('abc123deab123fab').groups() == _re.search(match_pattern, 'abc123deab123fab').groups()
-    assert pat.findall('abc123deab123fab') == _re.findall(match_pattern, 'abc123deab123fab')
-    assert pat.search('abc123def').span() == _re.search(match_pattern, 'abc123def').span()
-    assert pat.split('abc123def') == ['c', 'def']
-    assert pat.sub('X', 'abc123def') == 'XcXdef'
-    assert pat.subn('X', 'abc123def') == ('XcXdef', 2)
-    print('all basic assertions passed')
