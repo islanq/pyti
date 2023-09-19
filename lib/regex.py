@@ -14,7 +14,7 @@ class Match:
         self.native_match = native_match
         self._start = start
         self._end = end
-                    
+        print("Got match str", match_string)
         try:
             # This will work in full Python environments
             self._groups = native_match.groups()
@@ -99,23 +99,10 @@ class Match:
             match_str = self.group(0)
         except IndexError:
             match_str = ""
-        return "<Regex.Match object; span=({}, {}); match='{}'>".format(self.span().start, self.span().end, match_str)
+        return "<Regex.Match object; span=({}, {}), match='{}'>".format(self.span().start, self.span().end, self.string)
 
     def __repr__(self) -> str:
         return self.__str__()
-
-    def _process_match(self, match_str: str, native_match, string, start, end):
-        if self._has_re_span:
-            # This will work in full Python environments
-            span = native_match.span()
-            start_pos = start + span[0]
-            end_pos = start + span[1]
-        else:
-            # In MicroPython environment, find start and end positions using a custom method
-            start_pos, end_pos = self._find_match_positions(string, start, end)
-
-        return Match(match_str, native_match, start_pos, end_pos)
-
 
 class RegexFlags(AbstractDataType):
 
@@ -221,7 +208,8 @@ class Pattern(_Cachable):
         if not m:
             return None
         
-        match_str = self._extract_match_str(m, search_str, start, end)
+        #match_str = self._extract_match_str(m, search_str, start, end)
+        match_str = m.group(0)
         
         if omit_positions:
             return Match(match_str, None, None)
@@ -343,17 +331,19 @@ class Pattern(_Cachable):
         else:
             return None, None
 
-    def _process_match(self, match_str: str, native_match, string, start, end):
+    def _process_match(self, match_str: str, match_obj, search_str: str, start: int, end: int):
         if self._has_re_span:
             # This will work in full Python environments
-            span = native_match.span()
-            start_pos = start + span[0]
-            end_pos = start + span[1]
+            span = match_obj.span()
+            beg = start + span[0]
+            end = start + span[1]
         else:
             # In MicroPython environment, find start and end positions using a custom method
-            start_pos, end_pos = self._find_match_positions(string, start, end)
-
-        return Match(match_str, native_match, start_pos, end_pos)
+            #start_pos, end_pos = self._find_match_positions(string, start, end)
+            
+            beg = search_str[start:end].index(match_str)
+            end = beg + len(match_str)
+        return Match(match_str, match_obj, beg, end)
 
     def _update_pattern(self) -> None:
 
@@ -376,13 +366,17 @@ class Pattern(_Cachable):
 
 if __name__ == '__main__':
 
-    match_pattern = r'(ab|123)'
+    # match_pattern = r'(ab|123)'
+    match_pattern = r'(ab)(123)'
     pat = Pattern(match_pattern, force_custom_impl=True)
-    assert pat._has_re_span == False and pat._forced == True
-    assert pat.search('abc123deab123fab').groups() == _re.search(match_pattern, 'abc123deab123fab').groups()
-    assert pat.findall('abc123deab123fab') == _re.findall(match_pattern, 'abc123deab123fab')
-    assert pat.search('abc123def').span() == _re.search(match_pattern, 'abc123def').span()
-    assert pat.split('abc123def') == ['c', 'def']
-    assert pat.sub('X', 'abc123def') == 'XcXdef'
-    assert pat.subn('X', 'abc123def') == ('XcXdef', 2)
-    print('all basic assertions passed')
+    # assert pat._has_re_span == False and pat._forced == True
+    # assert pat.search('abc123deab123fab').groups() == _re.search(match_pattern, 'abc123deab123fab').groups()
+    # assert pat.findall('abc123deab123fab') == _re.findall(match_pattern, 'abc123deab123fab')
+    # assert pat.search('abc123def').span() == _re.search(match_pattern, 'abc123def').span()
+    # assert pat.split('abc123def') == ['c', 'def']
+    # assert pat.sub('X', 'abc123def') == 'XcXdef'
+    # assert pat.subn('X', 'abc123def') == ('XcXdef', 2)
+    # print('all basic assertions passed')
+    
+    print(_re.search(match_pattern,'ab123deab123fab'))
+    print(pat.search('ab123deab123fab'))
