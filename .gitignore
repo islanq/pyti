@@ -178,3 +178,5 @@ tasks.json
 *.ipynb
 *.txt
 utils/playground.py
+pyvectorset.py
+utils/check.py
