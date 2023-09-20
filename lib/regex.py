@@ -246,11 +246,9 @@ class Pattern(_Cachable):
             end = len(string)
 
         pos = start
-        offset = pos
-        orig = string
-
+        
         while True:
-            # print(f'Using start {pos} and end {end}')
+
             match = self.search(string, pos, end)
 
             if not match:
@@ -260,10 +258,14 @@ class Pattern(_Cachable):
             groups = tuple()
 
             if not self._has_re_span:
-                # store the first group
-                zero_str = match.group(0)  # str value
 
-                zero_spn = match.span()
+                zero_str = match.group(0)
+                # although micropython doesn't support span
+                # we can still coun't on at least one one
+                zero_spn = match.span() 
+                # initial span object to be present from the
+                # match object
+                
 
                 zero_beg = zero_spn[0]
                 zero_end = zero_spn[1]
@@ -404,3 +406,5 @@ class Pattern(_Cachable):
         self._pattern_renew = False
 
 # endregion methods
+
+
