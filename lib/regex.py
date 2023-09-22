@@ -456,7 +456,7 @@ class Pattern(_Cachable):
         return self._process_match(match, string, start, end)
 
     def findall(self, string: str, start: int = 0, end: int = None) -> list[str]:
-        return [m.string for m in self.finditer(string, start, end)]
+        return [m.group(0) for m in self.finditer(string, start, end)]
 
     def split(self, string: str, maxsplit: int = 0, start: int = 0, end: int = 0) -> list[str]:
         matches = list(self.finditer(string, start, end))
@@ -472,8 +472,8 @@ class Pattern(_Cachable):
             if maxsplit and i >= maxsplit:
                 break
 
-            splits.append(string[start:match.start])
-            start = match.end
+            splits.append(string[start:match.start()])
+            start = match.end()
 
         # Append the remaining part of the string
         splits.append(string[start:])
@@ -531,7 +531,7 @@ class Pattern(_Cachable):
             end = len(string)
 
         match = self.match(string, start, end)
-        if match and match.start == start and match.end == end:
+        if match and match.start() == start and match.end() == end:
             return match
 
         return None
@@ -543,8 +543,8 @@ class Pattern(_Cachable):
         for i, match in enumerate(self.finditer(string)):
             if count and i >= count:
                 break
-            result += string[pos:match.start] + repl
-            pos = match.end
+            result += string[pos:match.start()] + repl
+            pos = match.end()
         result += string[pos:]
         return result
 
@@ -557,8 +557,8 @@ class Pattern(_Cachable):
         for i, match in enumerate(self.finditer(string)):
             if count and i >= count:
                 break
-            result += string[pos:match.start] + repl
-            pos = match.end
+            result += string[pos:match.start()] + repl
+            pos = match.end()
             substitutions += 1
 
         result += string[pos:]
