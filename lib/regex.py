@@ -264,44 +264,86 @@ class Span:
     def swap(self) -> 'Span':
         return Span(self._end, self._start)
 
-    def groups(self) -> tuple[int, int]:
-        if self._groups is None:
-            # In environments where `groups` method is not available, construct the groups tuple here
+
+class Match:
+    def __init__(self, match, start: int, end: int):
+        self._span = (Span(start, end),)
+        self._groups = ()
+        self._group = ()
+
+        """ 
+        we'll assume the most matches we can have 
+        is the length of the match string, as this would
+        mean every character matches at least once
+        """
+        # generate the span objects for each match group
+        mstring = match.group(0)
+        for i in range(1, len(match.group(0))):
             try:
-                self._groups = self.native_match.groups()
-            except AttributeError:
-                # Manually construct groups tuple; find all groups until an IndexError is raised
-                group_list = []
-                i = 1  # Start with 1 because group(0) is the entire match
-                while True:
-                    try:
-                        group_list.append(self.native_match.group(i))
-                        i += 1
-                    except IndexError:
-                        break
-                self._groups = tuple(group_list)
+                group = match.group(i)
+                group_len = len(group)
+                if i == 1:
+                    beg = 0
+                    end = group_len
+                else:
+                    mst = mstring[self.span(i-1)._end:]
+                    beg = self.span(i-1)._end + mst.find(group)
+                    end = beg + group_len
+                self._span = self._span + (Span(beg, end),)
+            except:
+                break
+        """
+        build out the groups based on the group as that is the
+        only object that is guaranteed to be present accross all
+        implementations
+        """
+        for i in range(len(self._span)):
+            if i == 0:
+                self._group = self._group + (match.group(i),)
+            else:
+                self._group = self._group + (match.group(i),)
+                self._groups = self._groups + (match.group(i),)
+
+    def start(self) -> int:
+        """Returns the start index of the match."""
+        return self.span().start
+
+    def end(self) -> int:
+        """Returns the end index of the match."""
+        return self.span().end
+
+    def groups(self) -> tuple[int, int]:
         return self._groups
 
     def group(self, index: int = 0) -> str:
-        """Returns the matched string or a specified group."""
         try:
-            return self._groups[index]
+            return self._group[index]
         except IndexError:
             raise IndexError('No such group')
 
-    def span(self, index: int = 0) -> _Span:
+    def span(self, index: int = 0, span: Span = None) -> Span:
         """Returns a tuple containing the start and end indices of the match."""
-        if self._span is None:
-            return _Span(self.start, self.end)
-        if index <= len(self.groups()):
-            return self._span[index]
+        if span is not None:
+            self._insert_span(index, span)
+        elif self._span is None:
+            return Span(self.start(), self.end())
+        return self._span[index]
+
+    def _insert_span(self, index: int, span: Span) -> None:
+        spans = self._span
+        self._span = ()
+        for i in range(len(spans)):
+            temp = spans[i] if i != index else span
+            self._span = self._span + (temp,)
+
+    def _find_span(self, span: Span) -> int:
+        for i in range(len(self._span)):
+            if self._span[i] == span:
+                return i
+        return -1
 
     def __str__(self) -> str:
-        try:
-            match_str = self.group(0)
-        except IndexError:
-            match_str = ""
-        return "<Regex.Match object; span=({}, {}), match='{}'>".format(self.span().start, self.span().end, self.string)
+        return "<Regex.Match object; span=({}, {}), match='{}'>".format(self.span(0)._start, self.span(0)._end, self.group(0))
 
     def __repr__(self) -> str:
         return self.__str__()
