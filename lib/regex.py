@@ -564,39 +564,6 @@ class Pattern(_Cachable):
         result += string[pos:]
         return result, substitutions
 
-    def _extract_match_str(self, match_obj, search_str: str, start: int, end: int) -> str:
-        """Extracts the matched string from the match object."""
-        if self._has_re_span:  # If re.span is available, use it to find the matched string
-            span = match_obj.span()
-            return search_str[start+span[0]: start+span[1]]
-        else:  # In MicroPython environment, use custom method to find the matched string
-            start_pos, end_pos = self._find_match_positions(
-                search_str, start, end)
-            return search_str[start_pos:end_pos]
-
-    def _find_match_positions(self, string: str, start: int, end: int) -> tuple[int, int]:
-        """Find the start and end positions of a match using a binary search approach."""
-
-        if self._search_method(string[start:end]):
-            # if a match is confirmed, proceed with binary search
-            left, right = start, end
-
-            # Step 2 & 3: Binary search to narrow down to a small segment
-            while right - left > 10:  # Adjust threshold as needed
-                mid = left + (right - left) // 2
-                if self._search_method(string[left:mid]):
-                    right = mid
-                else:
-                    left = mid
-
-            # Step 4: Linear search in the small segment to find exact positions
-            for start_pos in range(left, right):
-                match = self._match_method(string[start_pos:])
-                if match:
-                    end_pos = start_pos + len(match.group(0))
-                    return start_pos, end_pos
-        else:
-            return None, None
 
     def _process_match(self, match_str: str, match_obj, search_str: str, start: int, end: int):
         if self._has_re_span:
