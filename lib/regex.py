@@ -565,19 +565,19 @@ class Pattern(_Cachable):
         return result, substitutions
 
 
-    def _process_match(self, match_str: str, match_obj, search_str: str, start: int, end: int):
-        if self._has_re_span:
-            # This will work in full Python environments
-            span = match_obj.span()
-            beg = start + span[0]
-            end = start + span[1]
-        else:
-            # In MicroPython environment, find start and end positions using a custom method
-            # start_pos, end_pos = self._find_match_positions(string, start, end)
+    # def _process_match(self, match_str: str, match_obj, search_str: str, start: int, end: int):
+    #     if self._has_re_span:
+    #         # This will work in full Python environments
+    #         span = match_obj.span()
+    #         beg = start + span[0]
+    #         end = start + span[1]
+    #     else:
+    #         # In MicroPython environment, find start and end positions using a custom method
+    #         # start_pos, end_pos = self._find_match_positions(string, start, end)
 
-            beg = search_str[start:end].index(match_str)
-            end = beg + len(match_str)
-        return Match(match_str, match_obj, beg, end)
+    #         beg = search_str[start:end].index(match_str)
+    #         end = beg + len(match_str)
+    #     return Match(match_str, match_obj, beg, end)
 
     def _update_pattern(self) -> None:
 
