@@ -462,10 +462,8 @@ class Pattern(_Cachable):
         """ Implements the findall method using custom implementation."""
         return [m.string for m in self.finditer(string, start, end)]
 
-    def split(self, string: str, maxsplit: int = 0) -> list[str]:
-        """Implements the split method using re.split."""
-        # Find all the match objects in the string
-        matches = list(self.finditer(string))
+    def split(self, string: str, maxsplit: int = 0, start: int = 0, end: int = 0) -> list[str]:
+        matches = list(self.finditer(string, start, end))
 
         # If no matches, return the string in a list
         if not matches:
