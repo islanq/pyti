@@ -350,7 +350,6 @@ class Match:
 
 
 class RegexFlags(AbstractDataType):
-
     NONE = AbstractDataType(0, 'NONE')
     ASCII = AbstractDataType(256, 'ASCII')
     DEBUG = AbstractDataType(128, 'DEBUG')
@@ -372,6 +371,10 @@ class Regex:
     @staticmethod
     def match(pattern: str, string: str, flags: RegexFlags = RegexFlags.NONE, start: int = 0, end: int = None, force=False):
         return Pattern(pattern, flags, force).match(string, start, end)
+    
+    @staticmethod
+    def count(pattern: str, string: str, flags: RegexFlags = RegexFlags.NONE, start: int = 0, end: int = None, force=False):
+        return Pattern(pattern, flags, force).count(string, start, end)
 
     @staticmethod
     def search(pattern: str, string: str, flags: RegexFlags = RegexFlags.NONE, start: int = 0, end: int = None, force=False):
@@ -419,7 +422,7 @@ class Pattern(_Cachable):
 
         if self._forced and self._has_re_span:
             self._has_re_span = False
-            print("Forcing custom re.match implementation")
+            # print("Forcing custom re.match implementation")
 
     @property
     def flags(self):
@@ -429,15 +432,15 @@ class Pattern(_Cachable):
     def pattern(self):
         return self._pattern
 
-
-# region methods
-
     def match(self, string: str, start: int = 0, end: int = None, omit_positions: bool = False) -> Match | None:
         """Implements the match method using re.match."""
         return self._find(self._match_method, string, start, end, omit_positions)
 
+    def count(self, string: str, start: int = 0, end: int = None) -> int:
+        """Implements the count method using custom implementation."""
+        return len(self.findall(string, start, end))
+
     def search(self, string: str, start: int = 0, end: int = None, omit_positions: bool = False) -> Match | None:
-        """Implements the search method using re.search."""
         return self._find(self._search_method, string, start, end, omit_positions)
 
     def _find(self, method: callable, string: str, start: int = 0, end: int = None, omit_positions: bool = False) -> Match:
@@ -564,21 +567,6 @@ class Pattern(_Cachable):
         result += string[pos:]
         return result, substitutions
 
-
-    # def _process_match(self, match_str: str, match_obj, search_str: str, start: int, end: int):
-    #     if self._has_re_span:
-    #         # This will work in full Python environments
-    #         span = match_obj.span()
-    #         beg = start + span[0]
-    #         end = start + span[1]
-    #     else:
-    #         # In MicroPython environment, find start and end positions using a custom method
-    #         # start_pos, end_pos = self._find_match_positions(string, start, end)
-
-    #         beg = search_str[start:end].index(match_str)
-    #         end = beg + len(match_str)
-    #     return Match(match_str, match_obj, beg, end)
-
     def _update_pattern(self) -> None:
 
         pattern = self._pattern_string
@@ -595,4 +583,5 @@ class Pattern(_Cachable):
 
         self._pattern_renew = False
 
-# endregion methods
+if __name__ == '__main__':
+    print(Regex.count('b','abccbv'))
