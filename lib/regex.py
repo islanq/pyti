@@ -440,26 +440,22 @@ class Pattern(_Cachable):
         """Implements the search method using re.search."""
         return self._find(self._search_method, string, start, end, omit_positions)
 
-    def _find(self, method: callable, search_str: str, start: int = 0, end: int = None, omit_positions: bool = False) -> Match:
-        """Helper method to implement common logic for match and search."""
+    def _find(self, method: callable, string: str, start: int = 0, end: int = None, omit_positions: bool = False) -> Match:
         if end is None:
-            end = len(search_str)
+            end = len(string)
 
-        m = method(search_str[start:end])
-        if not m:
+        match = method(string[start:end])
+        if not match:
             return None
 
-        print(m)
         # match_str = self._extract_match_str(m, search_str, start, end)
-        match_str = m.group(0)
 
         if omit_positions:
-            return Match(match_str, None, None)
+            return Match(match.group(0), None, None)
 
-        return self._process_match(match_str, m, search_str, start, end)
+        return self._process_match(match, string, start, end)
 
     def findall(self, string: str, start: int = 0, end: int = None) -> list[str]:
-        """ Implements the findall method using custom implementation."""
         return [m.string for m in self.finditer(string, start, end)]
 
     def split(self, string: str, maxsplit: int = 0, start: int = 0, end: int = 0) -> list[str]:
