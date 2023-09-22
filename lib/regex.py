@@ -366,40 +366,40 @@ class RegexFlags(AbstractDataType):
 class Regex:
 
     @staticmethod
-    def compile(pattern: str, flags: RegexFlags = RegexFlags.NONE):
-        return Pattern(pattern, flags)
+    def compile(pattern: str, flags: RegexFlags = RegexFlags.NONE, force=False):
+        return Pattern(pattern, flags, force)
 
     @staticmethod
-    def match(pattern: str, string: str, flags: RegexFlags = RegexFlags.NONE, start: int = 0, end: int = None):
-        return Pattern(pattern, flags).match(string, start, end)
+    def match(pattern: str, string: str, flags: RegexFlags = RegexFlags.NONE, start: int = 0, end: int = None, force=False):
+        return Pattern(pattern, flags, force).match(string, start, end)
 
     @staticmethod
-    def search(pattern: str, string: str, flags: RegexFlags = RegexFlags.NONE, start: int = 0, end: int = None):
-        return Pattern(pattern, flags).search(string, start, end)
+    def search(pattern: str, string: str, flags: RegexFlags = RegexFlags.NONE, start: int = 0, end: int = None, force=False):
+        return Pattern(pattern, flags, force).search(string, start, end)
 
     @staticmethod
-    def sub(pattern: str, repl: str, string: str, count=0, flags: RegexFlags = RegexFlags.NONE):
-        return Pattern(pattern, flags).sub(repl, string, count)
+    def sub(pattern: str, repl: str, string: str, count=0, flags: RegexFlags = RegexFlags.NONE, force=False):
+        return Pattern(pattern, flags, force).sub(repl, string, count)
 
     @staticmethod
-    def subn(pattern: str, repl: str, string: str, count: int = 0, flags: RegexFlags = RegexFlags.NONE):
-        return Pattern(pattern, flags).subn(repl, string, count)
+    def subn(pattern: str, repl: str, string: str, count: int = 0, flags: RegexFlags = RegexFlags.NONE, force=False):
+        return Pattern(pattern, flags, force).subn(repl, string, count)
 
     @staticmethod
-    def findall(pattern: str, string: str, flags: RegexFlags = RegexFlags.NONE, start: int = 0, end: int = None):
-        return Pattern(pattern, flags).findall(string, start, end)
+    def findall(pattern: str, string: str, flags: RegexFlags = RegexFlags.NONE, start: int = 0, end: int = None, force=False):
+        return Pattern(pattern, flags, force).findall(string, start, end)
 
     @staticmethod
-    def split(pattern: str, string: str, maxsplit: int = 0, flags: RegexFlags = RegexFlags.NONE, start: int = 0, end: int = None):
-        return Pattern(pattern, flags).split(string, maxsplit, start, end)
+    def split(pattern: str, string: str, maxsplit: int = 0, flags: RegexFlags = RegexFlags.NONE, start: int = 0, end: int = None, force=False):
+        return Pattern(pattern, flags, force).split(string, maxsplit, start, end)
 
     @staticmethod
-    def finditer(pattern: str, string: str, start: int = 0, end: int = None):
-        return Pattern(pattern).finditer(string, start, end)
+    def finditer(pattern: str, string: str, start: int = 0, end: int = None, force=False, flags: RegexFlags = RegexFlags.NONE):
+        return Pattern(pattern, flags, force).finditer(string, start, end)
 
     @staticmethod
-    def fullmatch(pattern: str, string: str, flags: RegexFlags = RegexFlags.NONE, start: int = 0, end: int = None):
-        return Pattern(pattern, flags).fullmatch(string, start, end)
+    def fullmatch(pattern: str, string: str, flags: RegexFlags = RegexFlags.NONE, start: int = 0, end: int = None, force=False):
+        return Pattern(pattern, flags, force).fullmatch(string, start, end)
 
 
 class Pattern(_Cachable):
