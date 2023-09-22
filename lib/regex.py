@@ -8,58 +8,261 @@ sys.path.extend(['../lib/', './lib/', '../', '.'])
 _Span = _namedtuple('Span', ['start', 'end'])
 
 
-class Match:
-    def __init__(self, match_string: str, native_match, start: int, end: int):
-        self.match_str = match_string
-        self.native_match = native_match
-        self._start = start
-        self._end = end
-        self._span = None
+class Span:
 
-        try:
-            # This will work in full Python environments
-            self._groups = native_match.groups()
-        except AttributeError:
-            # Manually construct groups tuple for Micropython environment
-            group_list = []
-            i = 1  # Start with 1 because group(0) is the entire match
-            while True:
-                try:
-                    group_list.append(native_match.group(i))
-                    i += 1
-                except IndexError:
-                    break
-            self._groups = tuple(group_list)
+    def __init__(self, start=0, end=None) -> None:
 
-    def _extract_groups(self, native_match):
-        groups = []
-        index = 1
-        while True:
-            try:
-                groups.append(native_match.group(index))
-                index += 1
-            except IndexError:
-                break
-        return tuple(groups)
+        if isinstance(start, tuple):
+            self._start = start[0]
+            self._end = start[1]
+        elif isinstance(start, Span):
+            self._start = start._start
+            self._end = start._end
+        elif isinstance(start, int) and isinstance(end, int):
+            self._start = start
+            self._end = end
+        elif isinstance(start, set):
+            self._start = start.pop()
+            self._end = start.pop()
+        elif isinstance(start, list):
+            self._start = start[0]
+            self._end = start[1]
+        elif isinstance(start, dict):
+            if 'start' in start and 'end' in start:
+                self._start = start['start']
+                self._end = start['end']
+            else:
+                keys = start.keys()
+                self._start = start[keys[0]]
+                self._end = start[keys[1]]
+        elif isinstance(start, str):
+            self._start = int(start.split(',')[0].strip().replace('(', ''))
+            self._end = int(start.split(',')[1].strip().replace(')', ''))
+        elif isinstance(start, float) and end:
+            self._start = int(start)
+            self._end = int(end)
+        else:
+            raise TypeError('Invalid argument types')
 
+# region Properties
     @property
     def start(self) -> int:
-        """Returns the start index of the match."""
         return self._start
 
     @property
     def end(self) -> int:
-        """Returns the end index of the match."""
         return self._end
 
-    @property
-    def match(self):
-        """Returns the matched string."""
-        return self.native_match
+    @start.setter
+    def start(self, value: int) -> None:
+        self._start = value
 
-    @property
-    def string(self):
-        return self.match_str
+    @end.setter
+    def end(self, value: int) -> None:
+        self._end = value
+# endregion Properties
+
+# region Dunder Methods
+
+# region Conversion Methods
+
+    def __str__(self) -> str:
+        return 'Span({}, {})'.format(self._start, self._end)
+
+    def __int__(self) -> int:
+        return self._end - self._start
+
+    def __float__(self) -> float:
+        return self._end - self._start
+
+    def __len__(self) -> int:
+        return abs(self._end - self._start)
+
+    def __tuple__(self) -> _Span:
+        return _Span(self._start, self._end)
+
+    def __set__(self) -> set:
+        return {self._start, self._end}
+
+    def __dict__(self) -> dict:
+        return {'start': self._start, 'end': self._end}
+
+    def __list__(self) -> list:
+        return [self._start, self._end]
+
+# endregion Conversion Methods
+
+# region Behaviors Methods
+
+    def __getitem__(self, index: int) -> int:
+        return (self._start, self._end)[index]
+
+    def __setitem__(self, index: int, value: int) -> None:
+        if index == 0:
+            self._start = value
+        elif index == 1:
+            self._end = value
+        else:
+            raise IndexError('Index out of range')
+
+    def __iter__(self):
+        return iter((self._start, self._end))
+
+    def __hash__(self) -> int:
+        return hash((self._start, self._end))
+
+    def __bool__(self) -> bool:
+        return self._start != 0 or self._end != 0
+
+# endregion Behaviors Methods
+
+# region Comparison Operators
+
+    def __eq__(self, o: object) -> bool:
+        if isinstance(o, tuple):
+            return self.__eq_tuple__(o)
+        elif isinstance(o, Span):
+            return self.__eq_span__(o)
+        else:
+            raise TypeError('Invalid argument type')
+
+    def __eq_tuple__(self, o: tuple) -> bool:
+        return self._start == o[0] and self._end == o[1]
+
+    def __eq_span__(self, o: _Span) -> bool:
+        return self._start == o.start and self._end == o.end
+
+    def __ne__(self, o: object) -> bool:
+        return self._start != o.start or self._end != o.end
+
+    def __lt__(self, o: object) -> bool:
+        return self._start < o.start and self._end < o.end
+
+    def __le__(self, o: object) -> bool:
+        return self._start <= o.start and self._end <= o.end
+
+    def __gt__(self, o: object) -> bool:
+        return self._start > o.start and self._end > o.end
+
+    def __ge__(self, o: object) -> bool:
+        return self._start >= o.start and self._end >= o.end
+
+# endregion Comparison Operators
+
+# region Arithmetic Operators
+
+    def __add__(self, o: object):
+        if isinstance(o, Span):
+            return self.__add_span__(o)
+        elif isinstance(o, tuple):
+            return self.__add_tuple__(o)
+        elif isinstance(o, _Span):
+            return self.__add_Span__(o)
+        elif isinstance(o, int):
+            return self.__add_int__(o)
+        elif isinstance(o, float):
+            return self.__add_float__(o)
+        else:
+            raise TypeError('Invalid argument type')
+
+    def __add_span__(self, o: 'Span'):
+        return Span(self._start + o._start, self._end + o._end)
+
+    def __add_tuple__(self, o: tuple):
+        return Span(self._start + o[0], self._end + o[1])
+
+    def __add_Span__(self, o: _Span):
+        return Span(self._start + o.start, self._end + o.end)
+
+    def __add_int__(self, o: int):
+        return Span(self._start + o, self._end + o)
+
+    def __add_float__(self, o: float):
+        return Span(int(self._start + o), (self._end + o))
+
+    def __radd__(self, o: object):
+        return self.__add__(self, o)
+
+    def __iadd__(self, o: object):
+        return self.__add__(self, o)
+
+    def __sub__(self, o: object):
+        return Span(self._start - o.start, self._end - o.end)
+
+    def __rsub__(self, o: object):
+        return Span(self._start - o.start, self._end - o.end)
+
+    def __isub__(self, o: object):
+        return Span(self._start - o.start, self._end - o.end)
+
+    def __mul__(self, o: object):
+        if isinstance(o, Span):
+            return self.__mul_span__(o)
+        elif isinstance(o, int):
+            return self.__mul_int__(o)
+        elif isinstance(o, float):
+            return self.__mul_float__(o)
+        else:
+            raise TypeError('Invalid argument type')
+
+    def __mul_span__(self, o: 'Span'):
+        return Span(self._start * o._start, self._end * o._end)
+
+    def __mul_int__(self, o: int):
+        return Span(self._start * o, self._end * o)
+
+    def __mul_float__(self, o: float):
+        return Span(self._start * o, self._end * o)
+
+    def __rmul__(self, o: object):
+        return self.__mul__(self, o)
+
+    def __imul__(self, o: object):
+        if isinstance(o, Span):
+            return self.__imul_span__(o)
+        elif isinstance(o, int):
+            return self.__imul_int__(o)
+        elif isinstance(o, float):
+            return self.__imul_float__(o)
+        else:
+            raise TypeError('Invalid argument type')
+
+    def __imul_int__(self, o: int):
+        return Span(self._start * o, self._end * o)
+
+    def __imul_float__(self, o: float):
+        return Span(self._start * o, self._end * o)
+
+    def __imul_span__(self, o: 'Span'):
+        return Span(self._start * o._start, self._end * o._end)
+
+    def __truediv__(self, o: object):
+        return Span(self._start / o.start, self._end / o.end)
+
+    def __rtruediv__(self, o: object):
+        return Span(self._start / o.start, self._end / o.end)
+
+    def __itruediv__(self, o):
+        return Span(self._start / o.start, self._end / o.end)
+
+# endregion Arithmetic Operators
+
+    def __repr__(self) -> str:
+        return 'Span({}, {})'.format(self._start, self._end)
+
+# endregion Dunder Methods
+
+    def offset(self, offset: (int, 'Span'), start: bool = True, end: bool = True):
+        if isinstance(offset, Span):
+            beg = offset._start if start else 0
+            end = offset._end if end else 0
+        else:
+            beg = offset if start else 0
+            end = offset if end else 0
+        return Span(self._start + beg, self._end + end)
+
+    def swap(self) -> 'Span':
+        return Span(self._end, self._start)
 
     def groups(self) -> tuple[int, int]:
         if self._groups is None:
