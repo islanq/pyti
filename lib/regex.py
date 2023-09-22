@@ -491,59 +491,45 @@ class Pattern(_Cachable):
             end = len(string)
 
         pos = start
-        offset = pos
-        orig = string
-
+        idx = 0
+        # while we have matches
         while True:
-            # print(f'Using start {pos} and end {end}')
+
             match = self.search(string, pos, end)
 
             if not match:
                 break
+            # calculate the start and end positions
+            s = match.span(0).start+pos
+            e = match.span(0).end+pos
+            if idx != 0:
+                e - len(match.group(0))
 
-            span = tuple()
-            groups = tuple()
+            idx += 1
+            pos += match.end()
 
-            if not self._has_re_span:
-                # store the first group
-                zero_str = match.group(0)  # str value
+            match.span(0, Span(s, e))
 
-                zero_spn = match.span()
+            yield match
 
-                zero_beg = zero_spn[0]
-                zero_end = zero_spn[1]
-                zero_len = zero_end - zero_beg
-                zero_off = zero_beg + pos
-                real_beg = zero_off
-                real_end = real_beg + zero_len
+    def _process_match(self, match, string: str, start: int, end: int):
+        if self._has_re_span:
+            # This will work in full Python environments
 
-                real_spn = _Span(real_beg, real_end)
-                span = span + (real_spn,)
-                groups = groups + (zero_str,)
+            span = match.span()
+            beg = start + span[0]
+            end = start + span[1]
 
-                pos = real_end
+        else:
+            # In MicroPython environment, find start and end positions using a custom method
+            # start_pos, end_pos = self._find_match_positions(string, start, end)
 
-                i = 1
-                while True:
-                    try:
-                        grp_str = match.group(i)
-                        grp_len = len(grp_str)
-                        grp_beg = real_beg if i == 1 else span[len(span)-1][1]
-                        grp_end = grp_beg + grp_len
+            beg = string[start:end].index(match.group(0))
+            end = beg + len(match.group(0))
 
-                        grp_spn = _Span(grp_beg, grp_end)
-                        groups = groups + (grp_str,)
-                        span = span + (grp_spn,)
+           # beg, end = self._find_match_positions(search_str, start, end)
 
-                        i += 1
-                    except Exception as e:
-                        # print("There was an error,", e)
-                        break
-
-                match.groups = lambda: groups
-                match.span = span
-
-            yield Match(match.string, match, real_beg, real_end)
+        return Match(match, beg, end)
 
     def fullmatch(self, string: str, start: int = 0, end: int = None) -> Match | None:
         """Implements the fullmatch method using custom implementation."""
