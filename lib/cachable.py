@@ -1,88 +1,131 @@
+class Cache:
+    def __init__(self, max_size):
+        self._max_size = max_size
+        self._miss = 0
+        self._hit = 0
+        self.cache = {}
+        self.order = []
+        
+    @property
+    def max(self) -> int:
+        return self._max_size
+    
+    @property
+    def miss(self) -> int:
+        return self._miss
+    
+    @property
+    def hit(self) -> int:
+        return self._hit
+    
+    @property
+    def ratio(self) -> float:
+        return self._hit / self._miss
+    
+    @max.setter
+    def max(self, value) -> None:
+        self._max_size = value
+        if len(self.cache) > value:
+        # Remove the oldest elements until the cache is the correct size
+            for _ in range(len(self.cache) - value):
+                oldest = self.order.pop(0)
+                del self.cache[oldest]
+
+    def add(self, key, value) -> None:
+        self._miss += 1
+        if key in self.cache:
+            return
+        if len(self.cache) >= self.max:
+            oldest = self.order.pop(0)
+            del self.cache[oldest]
+        self.cache[key] = value
+        self.order.append(key)
+
+    def get(self, key) -> object:
+        obj =  self.cache.get(key)
+        if obj is not None:
+            self._hit += 1
+        return obj
+
+    def clear(self) -> None:
+        self.cache = {}
+        self.order = []
+
+    def size(self) -> int:
+        return len(self.cache)
+
+    def __repr__(self):
+        return str(self.cache)
 
 class Cachable:
-    _cache = {}
-
-    _cache_include_attrs = set()
-    _cache_exclude_attrs = set()
+    _caches = {}
 
     def __new__(cls, *args, **kwargs):
-        kwargs_items = tuple(sorted(kwargs.items()))
-        cache_key = (cls, args, kwargs_items)
-        if cache_key in cls._cache:
-            return cls._cache[cache_key]
+        cache = cls.cache()
+        cache_key = (args, tuple(sorted(kwargs.items())))
+        cached_object = cache.get(cache_key)
+        # we have a cache hit
+        if cached_object is not None:
+            return cached_object
+        # we have a cache miss
         else:
             obj = super().__new__(cls)
-            cls._cache[cache_key] = obj
+            cache.add(cache_key, obj)
             return obj
 
-    def __setattr__(self, name, value):
-        super().__setattr__(name, value)
-        if not name.startswith("_"):
-            self._update_cache()
-
-    def __getattribute__(self, name):
-        if name.startswith("_") or name in ("_update_cache",):
-            return super().__getattribute__(name)
-        attr = super().__getattribute__(name)
-        self._update_cache()
-        return attr
-
-    # def _update_cache(self):
-    #     public_attrs = {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
-    #     cache_key = (self.__class__, tuple(public_attrs.items()))
-    #     self.__class__._cache[cache_key] = self
-
-    def _update_cache(self):
-        # Get all public attributes
-        all_attrs = {k: v for k, v in self.__dict__.items()
-                     if not k.startswith("_")}
-
-        # Apply inclusion and exclusion criteria
-        if self._cache_include_attrs:
-            attrs = {k: v for k, v in all_attrs.items(
-            ) if k in self._cache_include_attrs}
-        else:
-            attrs = {k: v for k, v in all_attrs.items(
-            ) if k not in self._cache_exclude_attrs}
-        cache_key = (self.__class__, tuple(attrs.items()))
-        self.__class__._cache[cache_key] = self
 
     @classmethod
-    def clear_cache(cls):
-        for key in list(cls._cache.keys()):
-            if key[0] == cls:
-                del cls._cache[key]
+    def cache(cls) -> Cache:
+        if cls not in Cachable._caches:
+            max_size = 50
+            Cachable._caches[cls] = Cache(max_size)
+        return Cachable._caches[cls]
+    
+    
+    @classmethod
+    def cache_max(cls, size = None):
+        cache = cls.cache()
+        if size is not None:
+            cache.max = size
+        else:
+            return cache.max
 
-    @staticmethod
-    def clear_global():
-        Cachable._cache = {}
+    @classmethod
+    def cache_clear(cls, clear_global:bool = False):
+        if clear_global:
+            Cachable._caches = {}
+        else:
+            cls.cache().clear()
 
     @classmethod
     def cache_size(cls):
-        return len(cls.cache_keys())
+        return cls.cache().size()
 
-    @classmethod
-    def cache_keys(cls):
-        return [key for key in cls._cache.keys() if key[0] == cls]
+if __name__ == "__main__":
+    
+    class Person(Cachable):
+        def __init__(self, name, age):
+            self.name = name
+            self.age = age
 
-    @staticmethod
-    def cached_types():
-        return list(set([key[0] for key in Cachable._cache.keys()]))
 
-    @classmethod
-    def include_attributes(cls, *attr_names):
-        if not isinstance(cls, type):
-            raise TypeError(
-                "This method can only be called from the class, not from an instance")
-        cls._cache_include_attrs.update(attr_names)
-
-    @classmethod
-    def exclude_attributes(cls, *attr_names):
-        if not isinstance(cls, type):
-            raise TypeError(
-                "This method can only be called from the class, not from an instance")
-        cls._cache_exclude_attrs.update(attr_names)
-
-    @classmethod
-    def find_by_type(cls, type):
-        return [key for key in cls._cache.keys() if key[0] == type]
+        def __repr__(self):
+            return "Person(name={}, age={})".format(self.name, self.age)
+    
+    class Person2(Person):
+        def __init__(self, name, age):
+            self.name = name
+            self.age = age
+    
+    count = 60
+    
+    for i in range(count):
+        Person("John", i) # Cache miss
+    Person("John", 2) # Cache hit
+    
+    assert Person.cache_size() == 50
+    Person.cache_clear()
+    assert Person.cache_size() == 0
+    assert Person.cache_max() == 50
+    Person.cache_max(2)
+    assert Person.cache_max() == 2
