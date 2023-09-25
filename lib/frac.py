@@ -139,95 +139,129 @@ class Frac:
         return [self.n, self.d]
     
     def __str__(self) -> str:
-        return "{}/{}".format(self.n, self.d) if self.approx != int(self) else str(int(self))
+    #region Arithmetic operators
 
-    def __repr__(self):
-        return "{}/{}".format(self.n, self.d) if self.approx != int(self) else str(int(self))
-
-    def __add__(self, other):
+    def __add__(self, other) -> Frac:
         if isinstance(other, (int, float)):
             other = Frac(other)
-        new_n = self._n * other._d + other._n * self._d
-        new_d = self._d * other._d
+        new_n = self.n * other.d + other.n * self.d
+        new_d = self.d * other.d
         return Frac(new_n / new_d)
 
-    def __abs__(self):
-        return abs(self.n / self.d)
-
-    def __radd__(self, other):
+    def __radd__(self, other) -> Frac:
         return self.__add__(other)
 
-    def __iadd__(self, other):
+    def __iadd__(self, other) -> Frac:
         result = self + other
-        self._n, self._d = result.n, result.d
+        self.n, self.d = result.n, result.d
         return self
 
-    def __sub__(self, other):
+    def __sub__(self, other) -> Frac:
         if isinstance(other, (int, float)):
             other = Frac(other)
-        new_n = self._n * other._d - other._n * self._d
-        new_d = self._d * other._d
+        new_n = self.n * other.d - other.n * self.d
+        new_d = self.d * other.d
         return Frac(new_n / new_d)
 
-    def __rsub__(self, other):
+    def __rsub__(self, other) -> Frac:
         return self.__sub__(other)
 
-    def __isub__(self, other):
+    def __isub__(self, other) -> Frac:
         result = self - other
-        self._n, self._d = result.n, result.d
+        self.n, self.d = result.n, result.d
         return self
 
-    def __mul__(self, other):
+    def __mul__(self, other) -> Frac:
         if isinstance(other, (int, float)):
             other = Frac(other)
-        new_n = self._n * other._n
-        new_d = self._d * other._d
+        new_n = self.n * other.n
+        new_d = self.d * other.d
         return Frac(new_n / new_d)
 
-    def __rmul__(self, other):
+    def __rmul__(self, other) -> Frac:
         return self.__mul__(other)
 
-    def __imul__(self, other):
+    def __imul__(self, other) -> Frac:
         result = self * other
-        self._n, self._d = result.n, result.d
+        self.n, self.d = result.n, result.d
         return self
 
-    def __truediv__(self, other):
+    def __truediv__(self, other) -> Frac:
         if isinstance(other, (int, float)):
             other = Frac(other)
-        new_n = self._n * other._d
-        new_d = self._d * other._n
+        new_n = self.n * other.d
+        new_d = self.d * other.n
         return Frac(new_n / new_d)
 
-    def __rtruediv__(self, other):
+    def __rtruediv__(self, other) -> Frac:
         return self.__truediv__(other)
 
-    def __idiv__(self, other):
+    def __idiv__(self, other) -> Frac:
         result = self / other
-        self._n, self._d = result.n, result.d
+        self.n, self.d = result.n, result.d
         return self
 
-    def __floordiv__(self, other):
+    def __floordiv__(self, other) -> Frac:
         if isinstance(other, (int, float, Frac)):
             other = Frac(other)
-        result = self._n * other._d // (self._d * other._n)
+        result = self.n * other.d // (self.d * other.n)
         return Frac(result)
+    
+    def __rfloordiv__(self, other) -> Frac:
+        return self.__floordiv__(other)
+    
+    def __ifloordiv__(self, other) -> Frac:
+        result = self // other
+        self.n, self.d = result.n, result.d
+        return self
+    
+    def __pow__(self, other) -> Frac:
+        if isinstance(other, (int, float)):
+            other = Frac(other)
+        return Frac(float(self) ** float(other))
+    
+    def __rpow__(self, other) -> Frac:
+        return self.__pow__(other)
+    
+    def __ipow__(self, other) -> Frac:
+        result = self ** other
+        self.n, self.d = result.n, result.d
+        return self
 
-    def _is_frac_tuple(self, other) -> bool:
-        if not isinstance(other, tuple):
-            return False
-        if not len(other) == 2:
-            return False
-        return all(isinstance(t, int) for t in other) and other[1] != 0
+    def __mod__(self, other) -> Frac:
+        if isinstance(other, (int, float)):
+            other = Frac(other)
+        new_n = self.n * other.d % (self.d * other.n)
+        new_d = self.d * other.d
+        return Frac(new_n / new_d)
+    
+    def __rmod__(self, other) -> Frac:
+        return self.__mod__(other)
+    
+    def __imod__(self, other) -> Frac:
+        result = self % other
+        self.n, self.d = result.n, result.d
+        return self
 
-    def _to_fraction(self, other):
-        if isinstance(other, Frac):
-            return other
-        elif isinstance(other, (int, float, tuple)):
-            return Frac(other)
-        else:
-            return None
+    def __neg__(self) -> Frac:
+        return Frac(-self.n, self.d)
+    
+    def __pos__(self) -> Frac:
+        return Frac(self.n, self.d)
+    
+    def __invert__(self) -> Frac:
+        return Frac(self.d, self.n)
+    
+    def __abs__(self) -> Frac:
+        return Frac(abs(self.n), abs(self.d))
+    
+    def __floor__(self) -> Frac:
+        return Frac(self.n // self.d)
+    
+    def __round__(self, n: int = 0) -> float:
+        return round(float(self), n)
 
+    #endregion Arithmetic operators
     def __eq__(self, other) -> bool:
         other = self._to_fraction(other)
         if other is not None:
