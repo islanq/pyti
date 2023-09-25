@@ -1,7 +1,11 @@
 from collections import namedtuple
+import sys
+if sys.implementation.name != 'micropython':
+    from fractions import Fraction
+    
 FracTuple = namedtuple('FracTuple', ['numerator', 'denominator'])
 
-
+class Frac: pass
 class Frac:
 
     def __init__(self,
