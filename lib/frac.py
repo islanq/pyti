@@ -205,6 +205,30 @@ class Frac:
         return [self.n, self.d]
     
     def __str__(self) -> str:
+        
+        def get_shortest(value):
+            vanity = str(Frac(value, error=self._error))
+            floats = str(value)
+            if len(vanity) < len(floats):
+                return "({})".format(vanity)
+            else:
+                return "{}".format(floats)
+        
+        
+        if self.approx == int(self):
+            return str(int(self))
+        
+        
+        numerator = self.n
+        denominator = self.d
+        
+        if isinstance(self.n, float) and self.n % 1 > self._error:
+            numerator = get_shortest(numerator)
+            
+        if isinstance(self.d, float) and self.d % 1 > self._error:
+            denominator = get_shortest(abs(denominator))
+            
+        return "{}/{}".format(numerator, denominator)
     
     def __Fraction__(self) -> 'Fraction':
         return Fraction(self.n, self.d)
