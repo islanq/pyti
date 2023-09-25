@@ -4,45 +4,28 @@ FracTuple = namedtuple('FracTuple', ['numerator', 'denominator'])
 
 class Frac:
 
-    def __init__(self, num, error=0.000001) -> None:
+    def __init__(self,
+                 number: int | float | FracTuple | Frac | str = 0,
+                 denom: int = 1,
+                 error=1e-6) -> None:
+        
+        self._num = None
+        self._den = None
+        self._dec = None
         self._error = error
-
-        if isinstance(num, Frac):
-            self._n = num.numerator
-            self._d = num.denominator
-
-        elif isinstance(num, int):
-            self._n = num
-            self._d = 1
-
-        elif isinstance(num, float):
-            self._n, self._d = self.dec_to_frac(num, error)
-
-        elif self._is_frac_tuple(num):
-            self._n = num[0]
-            self._d = num[1]
-
-        elif isinstance(num, str):
-            if num.count('.') == 1:
-                num = float(num)
-            elif num.count('/') == 1:
-                n, d = num.split('/')
-                num = float(n) / float(d)
-            else:
-                try:
-                    num = float(eval(num))
-                except:
-                    raise ValueError(
-                        "Invalid string representation of a fraction.")
-
-            self._n, self._d = self.dec_to_frac(float(num), error)
-
-        elif isinstance(num, complex):
-            raise ValueError(
-                "Complex numbers cannot be directly represented as a fraction.")
+        self._refresh = True
+        
+        if isinstance(number, (int, float)):
+            self.n, self.d = (number, denom or 1)
+        elif isinstance(number, (Frac, FracTuple)):
+            self.n, self.d = (number.numerator, number.denominator)
+        elif isinstance(number, str):
+            self.n, self.d = self._parse_from_string(number)
         else:
-            raise TypeError("Unsupported type for Fraction.")
-        if (self._d == 0):
+            raise TypeError("Invalid type for number: {}".format(type(number)))
+            
+        if denom == 1:
+            self._n, self._d = self.dec_to_frac(self.approx, error=error)
             raise ZeroDivisionError("The denominator cannot be 0!")
 
         self._dec = self._n / self._d
