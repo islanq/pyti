@@ -132,12 +132,12 @@ class Frac:
     def __tuple__(self) -> tuple:
         return (self.n, self.d)
 
-    def to_dict(self) -> dict:
-        return {
-            'numerator': self.n,
-            'denominator': self.d
-        }
+    def __set__(self) -> set:
+        return {self.n, self.d}
 
+    def __list__(self) -> list:
+        return [self.n, self.d]
+    
     def __str__(self) -> str:
         return "{}/{}".format(self.n, self.d) if self.approx != int(self) else str(int(self))
 
