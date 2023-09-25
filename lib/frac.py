@@ -130,7 +130,7 @@ class Frac:
         return int(self.approx)
 
     def __tuple__(self) -> tuple:
-        return (self.n, self.d)
+        return FracTuple(self.n, self.d)
 
     def __set__(self) -> set:
         return {self.n, self.d}
