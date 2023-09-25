@@ -177,6 +177,16 @@ class Frac:
             except:
                 pass
         raise ValueError("Invalid string for Frac: {}".format(string))
+  
+    #endregion Private Class Helper Methods              
+
+    #region Misc. Dunder methods
+        
+    def __setattr__(self, name, value):
+        super().__setattr__(name, value)
+
+    def __getattribute__(self, name):
+        return super().__getattribute__(name)
 
     def __getitem__(self, key: int) -> int:
         if key not in (0, 1): raise IndexError("Frac only has two elements.")
