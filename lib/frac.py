@@ -372,10 +372,12 @@ class Frac:
         return round(float(self), n)
 
     #endregion Arithmetic operators
+
+    #region Comparison operators
     def __eq__(self, other) -> bool:
         other = self._to_fraction(other)
         if other is not None:
-            return self._n * other._d == self._d * other._n
+            return self.n * other.d == self.d * other.n
         return False
 
     def __ne__(self, other) -> bool:
@@ -384,7 +386,7 @@ class Frac:
     def __gt__(self, other) -> bool:
         other = self._to_fraction(other)
         if other is not None:
-            return self._n * other._d > self._d * other._n
+            return self.n * other.d > self.d * other.n
         return False
 
     def __ge__(self, other) -> bool:
@@ -399,15 +401,12 @@ class Frac:
             return not self.__eq__(other) and not self.__gt__(other)
         return False
 
-    def __le__(self, other: ('Frac', int, float)) -> bool:
+    def __le__(self, other: (Frac, int, float)) -> bool:
         other = self._to_fraction(other)
         if other is not None:
             return self.__eq__(other) or self.__lt__(other)
         return False
-
-    def __iter__(self):
-        yield self.n
-        yield self.d
+    #endregion Comparison operators
 
 
 if __name__ == '__main__':
