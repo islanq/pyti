@@ -31,7 +31,7 @@ class Frac:
         self._dec = self._n / self._d
 
     @staticmethod
-    def dec_to_frac(x, error=0.000001):
+    def dec_to_frac(x, error=1e-6) -> FracTuple:
         if isinstance(x, Frac):
             return x
 
@@ -58,6 +58,7 @@ class Frac:
                 lower_n = middle_n
                 lower_d = middle_d
             else:
+                return FracTuple(int(n * middle_d + middle_n), (middle_d))
 
     def _reduce_if_possible(self, decimal: float) -> int | float:
         integer = int(decimal)
