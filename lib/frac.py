@@ -139,6 +139,10 @@ class Frac:
         return [self.n, self.d]
     
     def __str__(self) -> str:
+    
+    def __Fraction__(self) -> 'Fraction':
+        return Fraction(self.n, self.d)
+    
     #region Arithmetic operators
 
     def __add__(self, other) -> Frac:
