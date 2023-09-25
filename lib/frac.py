@@ -67,6 +67,13 @@ class Frac:
         integer = int(decimal)
         return integer if integer == decimal else decimal
 
+    def _is_frac_tuple(self, other) -> bool:
+        if not isinstance(other, tuple):
+            return False
+        if not len(other) == 2:
+            return False
+        return all(isinstance(t, int) for t in other) and other[1] != 0
+
     def _to_fraction(self, other) -> Frac:
         if isinstance(other, Frac):
             return other
