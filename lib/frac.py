@@ -394,14 +394,15 @@ class Frac:
         yield self.d
 
 
-def _perform_tests():
+if __name__ == '__main__':
     one_third = 0.33333333333
 
     assert Frac(one_third) == one_third
     assert tuple(Frac(one_third)) == (1, 3)
     assert str(Frac(one_third)) == "1/3"
+    assert Frac("1/3") == Frac(1, 3)
+    assert Frac("1/3") == Frac(2, 6)
+    assert Frac("1/3") == 1/3
     assert abs(Frac(one_third) - one_third) < 0.000001
-
-
-if __name__ == '__main__':
-    _perform_tests()
+    assert Frac(1.5) == 1.5
+    assert Frac(1.5) == Frac(3, 2)
