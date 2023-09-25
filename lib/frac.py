@@ -58,6 +58,16 @@ class Frac:
                 lower_n = middle_n
                 lower_d = middle_d
             else:
+    def _to_fraction(self, other) -> Frac:
+        if isinstance(other, Frac):
+            return other
+        elif isinstance(other, (int, float, tuple)):
+            return Frac(other)
+        elif 'fractions' in sys.modules:
+            if isinstance(other, Fraction):
+                return Frac(other.numerator, other.denominator)
+            return None
+
     def _parse_from_string(self, string: str):
         string = string.strip().replace(' ', '')
 
