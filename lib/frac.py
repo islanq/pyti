@@ -105,6 +105,17 @@ class Frac:
             except:
                 pass
         raise ValueError("Invalid string for Frac: {}".format(string))
+
+    def __getitem__(self, key: int) -> int:
+        if key not in (0, 1): raise IndexError("Frac only has two elements.")
+        if   key == 0: return self.n
+        elif key == 1: return self.d
+     
+    def __setitem__(self, key: int, value: int) -> None:
+        if key not in (0, 1): raise IndexError("Frac only has two elements.")
+        if    key == 0: self.n = value
+        elif  key == 1: self.d = value
+
     def __float__(self) -> float:
         try:
             return float(self.n/self.d)
