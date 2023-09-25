@@ -26,6 +26,12 @@ class Frac:
             
         if denom == 1:
             self._n, self._d = self.dec_to_frac(self.approx, error=error)
+
+    def __repr__(self) -> str:
+        return "<Frac;{}/{}>".format(self.n, self.d) if self.approx != int(self) else str(int(self))
+
+    #region Properties  
+
     #region Getters
     @property
     def approx(self) -> float:
