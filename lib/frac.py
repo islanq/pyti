@@ -58,6 +58,11 @@ class Frac:
                 lower_n = middle_n
                 lower_d = middle_d
             else:
+
+    def _reduce_if_possible(self, decimal: float) -> int | float:
+        integer = int(decimal)
+        return integer if integer == decimal else decimal
+
     def _to_fraction(self, other) -> Frac:
         if isinstance(other, Frac):
             return other
