@@ -58,28 +58,27 @@ class Frac:
                 lower_n = middle_n
                 lower_d = middle_d
             else:
-                return FracTuple(n * middle_d + middle_n, middle_d)
+    def _parse_from_string(self, string: str):
+        string = string.strip().replace(' ', '')
 
-    @property
-    def approx(self):
-        return float(self._dec)
-
-    @property
-    def numerator(self) -> int:
-        return self._n
-
-    @property
-    def denominator(self) -> int:
-        return self._d
-
-    @property
-    def n(self) -> int:
-        return self.numerator
-
-    @property
-    def d(self) -> int:
-        return self.denominator
-
+        if string.count('/') == 1:
+            try:
+                num, den = string.split('/')
+                num = eval(num)
+                den = eval(den)
+                num = self._reduce_if_possible(float(num))
+                den = self._reduce_if_possible(float(den))
+                return num, den
+            except:
+                pass
+        else:
+            try:
+                num = eval(string)
+                num = self._reduce_if_possible(float(num))
+                return num, 1
+            except:
+                pass
+        raise ValueError("Invalid string for Frac: {}".format(string))
     def __float__(self) -> float:
         try:
             return float(self.n/self.d)
