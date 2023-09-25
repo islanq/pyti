@@ -27,9 +27,12 @@ class Frac:
         if denom == 1:
             self._n, self._d = self.dec_to_frac(self.approx, error=error)
             raise ZeroDivisionError("The denominator cannot be 0!")
-
-        self._dec = self._n / self._d
-
+    def proper(self) -> str:
+        integer = int(self)
+        fraction = self % integer
+        
+        return "{}{}{}".format(integer, '' if fraction < 0 else '+', fraction)
+        
     @staticmethod
     def dec_to_frac(x, error=1e-6) -> FracTuple:
         if isinstance(x, Frac):
