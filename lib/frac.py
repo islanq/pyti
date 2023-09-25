@@ -91,6 +91,8 @@ class Frac:
     #endregion Setters
         
     #endregion Properties
+
+    #region Public Class Methods
     def proper(self) -> str:
         integer = int(self)
         fraction = self % integer
@@ -126,6 +128,9 @@ class Frac:
                 lower_d = middle_d
             else:
                 return FracTuple(int(n * middle_d + middle_n), (middle_d))
+    #endregion Public Class Methods
+
+    #region Private Class Helper Methods   
 
     def _reduce_if_possible(self, decimal: float) -> int | float:
         integer = int(decimal)
@@ -202,6 +207,9 @@ class Frac:
         if    key == 0: self.n = value
         elif  key == 1: self.d = value
 
+    #endregion Misc. Dunder methods
+
+    #region Type conversion
     def __float__(self) -> float:
         try:
             return float(self.n/self.d)
@@ -253,6 +261,8 @@ class Frac:
     def __Fraction__(self) -> 'Fraction':
         return Fraction(self.n, self.d)
     
+    #endregion Type conversion
+
     #region Arithmetic operators
 
     def __add__(self, other) -> Frac:
