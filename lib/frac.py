@@ -26,7 +26,61 @@ class Frac:
             
         if denom == 1:
             self._n, self._d = self.dec_to_frac(self.approx, error=error)
+    #region Getters
+    @property
+    def approx(self) -> float:
+        self._update()
+        return float(self._dec)
+
+    @property
+    def numerator(self) -> int | float:
+        self._update()
+        return self._num
+
+    @property
+    def denominator(self) -> int | float:
+        self._update()
+        return self._den
+    
+    @property
+    def n(self) -> int | float:
+        return self.numerator
+
+    @property
+    def d(self) -> int | float:
+        return self.denominator
+
+    #endregion Getters
+
+    #region Setters
+
+    @n.setter
+    def n(self, numerator) -> None:
+        self.numerator = numerator
+        
+    @d.setter
+    def d(self, denominator) -> None:
+        self.denominator =  denominator
+    
+    @denominator.setter
+    def denominator(self, denominator: int | float) -> None:
+        if denominator == 0:
             raise ZeroDivisionError("The denominator cannot be 0!")
+        denominator = self._reduce_if_possible(denominator)
+        if self._den != denominator:
+            self._den = denominator
+            self._refresh = True
+        
+    @numerator.setter
+    def numerator(self, numerator: int) -> None:
+        numerator = self._reduce_if_possible(numerator)
+        if self._num != numerator:
+            self._num = numerator
+            self._refresh = True
+        
+    #endregion Setters
+        
+    #endregion Properties
     def proper(self) -> str:
         integer = int(self)
         fraction = self % integer
@@ -67,6 +121,18 @@ class Frac:
         integer = int(decimal)
         return integer if integer == decimal else decimal
 
+    def _update(self) -> None:
+        if not self._refresh:
+            return
+        
+        self._dec = self._num / self._den
+        self._num, self._den = self.dec_to_frac(self._dec, error=self._error)
+        self._num = abs(self._num)
+        self._den = abs(self._den)
+        if self._dec < 0:
+            self._num *= -1
+        self._refresh = False
+    
     def _is_frac_tuple(self, other) -> bool:
         if not isinstance(other, tuple):
             return False
