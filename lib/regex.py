@@ -507,6 +507,12 @@ class Pattern(_Cachable):
         """Implements the finditer method using custom implementation."""
         if end is None:
             end = len(string)
+            
+        # we have a full env and are not forcing the custom implementation
+        if self._fullenv and not self._forced:
+            for match in self._re_pat.finditer(string[start:end]):
+                yield Match(match, start, end, True)
+            return
 
         pos = start
         idx = 0
