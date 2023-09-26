@@ -266,10 +266,23 @@ class Span:
 
 
 class Match:
-    def __init__(self, match, start: int, end: int):
+    def __init__(self, match, start: int, end: int, bypass  = False, string= None) -> None:
+        
+        if bypass:
+          
+            self._span = (Span(match.span()),)
+            self._groups = match.groups()
+            self._group = match.group()
+            self.string = match.string
+            return
+        
+        
         self._span = (Span(start, end),)
         self._groups = ()
         self._group = ()
+        if string:
+            self.string = string
+        
 
         """ 
         we'll assume the most matches we can have 
