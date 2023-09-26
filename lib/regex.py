@@ -423,41 +423,40 @@ class Regex:
 
 class Pattern(_Cachable):
 
-    def __init__(self, pattern, flags: RegexFlags = RegexFlags.NONE, force_custom_impl=False) -> None:
+    def __init__(self, pattern, flags: RegexFlags = RegexFlags.NONE, force=False) -> None:
 
-        self._has_re_span = sys.implementation.name != 'micropython'
-        self._forced = force_custom_impl
-        self._pattern_string = pattern
-        self._pattern_flags = flags
-        self._pattern_renew = True
+        self._fullenv = sys.implementation.name != 'micropython'
+        self._forced = force   # force the use of custom implementation
+        self._patstr = pattern # the pattern string
+        self._flags = flags    # the pattern flags
+        self._refresh = True   # refresh the pattern
 
-        self._search_method = None
-        self._match_method = None
+        self._re_search = None # the re search method
+        self._re_match = None  # the re match method
 
         self._update_pattern()
 
-        if self._forced and self._has_re_span:
-            self._has_re_span = False
-            # print("Forcing custom re.match implementation")
+        if self._forced and self._fullenv:
+            self._fullenv = False
 
     @property
     def flags(self):
-        return self._pattern_flags
+        return self._flags
 
     @property
     def pattern(self):
-        return self._pattern
+        return self._re_pat
 
     def match(self, string: str, start: int = 0, end: int = None, omit_positions: bool = False) -> Match | None:
         """Implements the match method using re.match."""
-        return self._find(self._match_method, string, start, end, omit_positions)
+        return self._find(self.pattern.match, string, start, end, omit_positions)
 
     def count(self, string: str, start: int = 0, end: int = None) -> int:
         """Implements the count method using custom implementation."""
         return len(self.findall(string, start, end))
 
     def search(self, string: str, start: int = 0, end: int = None, omit_positions: bool = False) -> Match | None:
-        return self._find(self._search_method, string, start, end, omit_positions)
+        return self._find(self.pattern.search, string, start, end, omit_positions)
 
     def _find(self, method: callable, string: str, start: int = 0, end: int = None, omit_positions: bool = False) -> Match:
         if end is None:
