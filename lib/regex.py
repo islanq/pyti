@@ -526,7 +526,7 @@ class Pattern(_Cachable):
             yield match
 
     def _process_match(self, match, string: str, start: int, end: int):
-        if self._has_re_span:
+        if self._fullenv:
             # This will work in full Python environments
 
             span = match.span()
@@ -585,19 +585,17 @@ class Pattern(_Cachable):
 
     def _update_pattern(self) -> None:
 
-        pattern = self._pattern_string
-        flags = self._pattern_flags
+        restr = self._patstr
+        flags = self._flags
 
         try:
-            self._pattern = _re.compile(pattern, flags)
-            self._search_method = self._pattern.search
-            self._match_method = self._pattern.match
+            self._re_pat = _re.compile(restr, flags)
+            self._re_search = self._re_pat.search
+            self._re_match = self._re_pat.match
         except _re.error:
-            self._pattern = pattern
-            self._search_method = _re.search
-            self._match_method = _re.match
+            print('Invalid pattern')
 
-        self._pattern_renew = False
+        self._refresh = False
 
 if __name__ == '__main__':
     print(Regex.count('b','abccbv'))
