@@ -343,7 +343,7 @@ class Match:
         return -1
 
     def __str__(self) -> str:
-        return "<Regex.Match object; span=({}, {}), match='{}'>".format(self.span(0)._start, self.span(0)._end, self.group(0))
+        return "<rx.Match object; span=({}, {}), match='{}'>".format(self.start(), self.end(), self.string[self.start():self.end()])
 
     def __repr__(self) -> str:
         return self.__str__()
