@@ -523,17 +523,64 @@ class Pattern(_Cachable):
 
             if not match:
                 break
-            # calculate the start and end positions
-            s = match.span(0).start+pos
-            e = match.span(0).end+pos
+            """
+                Populating the span objects:
+                
+                Micro Env:
+                
+                (1) In a micro env we call self.search
+                (2) self.search calls self._find, which 
+                (3) self._find calls self._process_match
+                (4) process match populates our span object
+                
+                
+                Process Matche's span creating behavior:
+                --------------------------------------------
+                Our span object, unlike the true span object,
+                will be not be the absolute position of the match,
+                but rather the position of the match relative
+                to the start of the string
+                
+                1) process match checks group 0, which is the entire match
+                2) it then finds the index of the match in the string using find
+                    a. find will return the first index of the match
+                3) process match uses first found index + the length of the match
+                
+                Conclusion:
+                --------------------------------------------------
+                This means we have to compute the absolute position of the match
+                relative to the start of the string, and then use that to create
+                
+                Example:
+                --------------------------------------------------
+                let's search for 'i' in 'this is a string'
+            
+                iter|  0123456789012345  |fspan|mlen| pos |native re
+                ----|--------------------|--------------------------
+                 1  | 'this is a string' |     |    |   0 | 
+                    |  >>^               |(2,3)| 1  | 2+1 |(2,3)
+                 2  | 's is a string'    |     |    | = 3 |
+                    |  >>^               |(2,3)| 1  | 2+1 |(5,6)
+                 3  | 's a string'       |     |    | = 6 |
+                    |  >>>>>>>^          |(7,8)| 1  | 7+1 |(13,14)
+                 4  | 'ng'               |     |    | =14 |
+                    |  >>                |None |    |     |
+                    
+            """
+            
+            
+            
+            beg_span = match.span(0).start + pos
+            end_span = match.span(0).end + pos
+            
             if idx != 0:
-                e - len(match.group(0))
-
+                end_span - len(match.group(0))
+                
             idx += 1
-            pos += match.end()
-
-            match.span(0, Span(s, e))
-
+            pos += match.start() + len(match)
+            
+            match.span(0, Span(beg_span, end_span))
+            
             yield match
 
     def _process_match(self, match, string: str, start: int, end: int):
