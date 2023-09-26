@@ -347,6 +347,9 @@ class Match:
 
     def __repr__(self) -> str:
         return self.__str__()
+    
+    def __len__(self) -> int:
+        return len(self._span)
 
 
 class RegexFlags(AbstractDataType):
