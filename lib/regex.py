@@ -597,10 +597,8 @@ class Pattern(_Cachable):
 
             beg = string[start:end].index(match.group(0))
             end = beg + len(match.group(0))
-
-           # beg, end = self._find_match_positions(search_str, start, end)
-
-        return Match(match, beg, end)
+            
+        return Match(match, beg, end, string=string)
 
     def fullmatch(self, string: str, start: int = 0, end: int = None) -> Match | None:
         """Implements the fullmatch method using custom implementation."""
