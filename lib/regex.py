@@ -459,15 +459,21 @@ class Pattern(_Cachable):
         return self._find(self.pattern.search, string, start, end, omit_positions)
 
     def _find(self, method: callable, string: str, start: int = 0, end: int = None, omit_positions: bool = False) -> Match:
+        # set the end to the length of the string if not provided
         if end is None:
             end = len(string)
 
+        # trim the string down before searching
         match = method(string[start:end])
         if not match:
             return None
-
-        # match_str = self._extract_match_str(m, search_str, start, end)
-
+        
+        # if we are in a full python environment,
+        # we can use the re span and bypass processing 
+        # so we'll just return the original re match
+        if self._fullenv and not self._forced:
+            return match
+                
         if omit_positions:
             return Match(match.group(0), None, None)
 
