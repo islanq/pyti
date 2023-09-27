@@ -5,7 +5,7 @@ if sys.implementation.name != 'micropython':
     
 FracTuple = namedtuple('FracTuple', ['numerator', 'denominator'])
 
-class Frac: pass
+class Frac:...
 class Frac:
 
     def __init__(self,
