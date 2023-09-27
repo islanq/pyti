@@ -35,7 +35,7 @@ def index_adjuster(func):
         return func(self, *args, **kwargs)
     return wrapper
 
-
+class PyMatrix:...
 class PyMatrix(ListLike2D):
 
     def __init__(self, data, cols=None, fill=0, zero_based=False):
