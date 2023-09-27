@@ -14,6 +14,7 @@ else:
     readst = readST
     writest = writeST
 from wrappers import ti_system_only
+class TiMatrix:...
 
 _assignment_operators = [':=', '→']
 
