@@ -1,11 +1,12 @@
 from cachable import Cachable as _Cachable
 from collections import namedtuple as _namedtuple
-import sys
-import re as _re
 from adt import AbstractDataType
+import re as _re
+import sys
 
 sys.path.extend(['../lib/', './lib/', '../', '.'])
 _Span = _namedtuple('Span', ['start', 'end'])
+
 
 
 class Span:
@@ -18,7 +19,8 @@ class Span:
         elif isinstance(start, Span):
             self._start = start._start
             self._end = start._end
-        elif isinstance(start, int) and isinstance(end, int):
+        elif (isinstance(start, int)
+         and isinstance(end, int)):
             self._start = start
             self._end = end
         elif isinstance(start, set):
@@ -60,6 +62,7 @@ class Span:
     @end.setter
     def end(self, value: int) -> None:
         self._end = value
+        
 # endregion Properties
 
 # region Dunder Methods
@@ -272,7 +275,7 @@ class Match:
           
             self._span = (Span(match.span()),)
             self._groups = match.groups()
-            self._group = match.group()
+            self._group = [(match.group(x)) for x in range(len(match.regs))]
             self.string = match.string
             return
         
@@ -289,6 +292,7 @@ class Match:
         is the length of the match string, as this would
         mean every character matches at least once
         """
+        
         # generate the span objects for each match group
         mstring = match.group(0)
         for i in range(1, len(match.group(0))):
@@ -486,33 +490,50 @@ class Pattern(_Cachable):
             return match
                 
         if omit_positions:
-            return Match(match.group(0), None, None)
+            return Match(match, None, None)
 
         return self._process_match(match, string, start, end)
 
     def findall(self, string: str, start: int = 0, end: int = None) -> list[str]:
-        return [m.group(0) for m in self.finditer(string, start, end)]
+        return [m.string[m.span().start : m.span().end] for m in self.finditer(string, start, end)]
 
-    def split(self, string: str, maxsplit: int = 0, start: int = 0, end: int = 0) -> list[str]:
+    def split(self, string: str, maxsplit: int = 0, start: int = 0, end: int = None) -> list[str]:
+        
+        
+        # time the re split
+        # start = timeit.timeit()
+        # for i in range(1000):
+        return self.sub('/\\', string, maxsplit).split('/\\')
+        
+        
+        return self.sub('-||-', string, maxsplit).split('-||-')
+    
         matches = list(self.finditer(string, start, end))
-
-        # If no matches, return the string in a list
         if not matches:
-            return [string]
+                    return [string]
+                
+        start = timeit.timeit()
+        for _ in range(1000):
+        # If no matches, return the string in a list
+            
 
-        # Split the string at the match indices
-        splits = []
-        start = 0
-        for i, match in enumerate(matches):
-            if maxsplit and i >= maxsplit:
-                break
+            # Split the string at the match indices
+            splits = []
+            start = 0
+            for i, match in enumerate(matches):
+                if maxsplit and i >= maxsplit:
+                    break
 
-            splits.append(string[start:match.start()])
-            start = match.end()
+                splits.append(string[start:match.start()])
+                start = match.end()
+                
+            # Append the remaining part of the string
+            splits.append(string[start:])
+            
+        print('re split: {:4f}'.format(timeit.timeit() - start))    
+                
+        return splits
 
-        # Append the remaining part of the string
-        splits.append(string[start:])
-        return [s for s in splits if s != '']
 
     def finditer(self, string: str, start: int = 0, end=None):
         """Implements the finditer method using custom implementation."""
@@ -597,15 +618,13 @@ class Pattern(_Cachable):
     def _process_match(self, match, string: str, start: int, end: int):
         if self._fullenv:
             # This will work in full Python environments
-
+            # but we should have bypassed this method
+            # so this is just for testing
             span = match.span()
             beg = start + span[0]
             end = start + span[1]
-
         else:
             # In MicroPython environment, find start and end positions using a custom method
-            # start_pos, end_pos = self._find_match_positions(string, start, end)
-
             beg = string[start:end].index(match.group(0))
             end = beg + len(match.group(0))
             
@@ -664,5 +683,65 @@ class Pattern(_Cachable):
 
         self._refresh = False
 
+
 if __name__ == '__main__':
-    print(Regex.count('b','abccbv'))
+    
+    string = 'this is a test string'
+    pattern = 'th|is'
+    methods = (Pattern(pattern, 0), Pattern(pattern, 0, True))
+    pass_message = lambda name: print('{} assertions passed!'.format(name))
+    
+    def test_match():
+        for method in methods:
+            result = method.match(string)
+            match  = _re.match(pattern, string)
+            #
+            assert match.group(0) == result.group(0)
+            assert match.span() == result.span()
+            assert match.start() == result.start()
+            assert match.end() == result.end()
+            assert match.string == result.string
+    
+    def test_search():
+        for method in methods:
+            result = method.search(string)
+            search = _re.search(pattern, string)
+            #
+            assert search.group(0) == result.group(0)
+            assert search.span() == result.span()
+            assert search.start() == result.start()
+            assert search.end() == result.end()
+            assert search.string == result.string
+        pass_message('Search')
+
+    def test_findall():
+        for method in methods:
+            result = method.findall(string)
+            assert _re.findall(pattern, string) == result
+        pass_message('Findall')
+    
+    def test_split():
+        for method in methods:
+            result = method.split(string)
+            relist = _re.split(pattern, string)
+            #
+            assert len(relist) == len(result)
+            assert relist == result
+            
+        pass_message('Split')
+    
+    def test_finditer():
+        for method in methods:
+            result = list(method.finditer(string))
+            relist = list(_re.finditer(pattern, string))
+            #
+            assert len(result) == len(relist)
+            assert result[0].group(0) == relist[0].group(0)
+            assert result[0].span() == relist[0].span()
+        pass_message('Finditer')
+        
+    test_match()
+    test_search()
+    test_findall()
+    test_split()
+    test_finditer()
