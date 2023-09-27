@@ -3,7 +3,7 @@ from matrix_tools import flatten, convert_element, is_flat_list
 from ti_formatting import mat_repr, display_matrix
 Dimensions = namedtuple('Dimensions', ['rows', 'cols'])
 
-
+class ListLike2D:...
 class ListLike2D:
 
     def __init__(self, data, cols=None, fill=0) -> None:
@@ -96,23 +96,37 @@ class ListLike2D:
         return self.data == other.data
 
     def __len__(self) -> int:
-        return len(self.data)
+        return self.dims.rows * self.dims.cols
 
-    def __getitem__(self, indices: (tuple, int)) -> any:
+    def __getitem__(self, indices: tuple | int | list | slice) -> any:
         if isinstance(indices, tuple):
             return self.data[indices[0]][indices[1]]
         if isinstance(indices, int):
             return self.data[indices]
+        if isinstance(indices, list):
+            if len(indices) == 1:
+                return self.data[indices[0]]
+            if len(indices) == 2:
+                return self.data[indices[0]][indices[1]]
+        if isinstance(indices, slice):
+            temp = []
+            return self.data[indices]
         raise TypeError("indices must be an int or a tuple of ints")
 
-    def __setitem__(self, indices: (tuple, int), value: any) -> None:
+    def __setitem__(self, indices: tuple | int | list, value: any) -> None:
         if isinstance(indices, tuple):
             self.data[indices[0]][indices[1]] = value
         elif isinstance(indices, int):
             self.data[indices] = value
-        raise TypeError("indices must be an int or a tuple of ints")
+        elif isinstance(indices, list):
+            if len(indices) == 1:
+                self.data[indices[0]] = value
+            elif len(indices) == 2:
+                self.data[indices[0]][indices[1]] = value
+        else:          
+            raise TypeError("indices must be an int or a tuple of ints")
 
-    def __iter__(self) -> 'ListLike2D':
+    def __iter__(self) -> ListLike2D:
         self._current = 0
         return self
 
@@ -144,7 +158,7 @@ class ListLike2D:
         """
         return [row[:] for row in self.data]
 
-    def clone(self) -> 'ListLike2D':
+    def clone(self) -> ListLike2D:
         """_summary_ returns a copy of the matrix
         of the internal data structure.
 
@@ -169,7 +183,7 @@ class ListLike2D:
             self.data[row][col] = values[row]
         return self
 
-    def set_row(self, row: int, values: list) -> 'ListLike2D':
+    def set_row(self, row: int, values: list) -> ListLike2D:
         if len(values) != self.dims.cols:
             raise ValueError(
                 "values must have length {}".format(self.dims.cols))
