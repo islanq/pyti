@@ -182,3 +182,4 @@ pyvectorset.py
 utils/check.py
 
 pyvectorset.py
+.vscode/launch.json
