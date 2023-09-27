@@ -363,6 +363,17 @@ class Match:
     
     def __len__(self) -> int:
         return len(self._span)
+    
+    def __eq__(self, __value: object) -> bool:
+        if isinstance(__value, Match):
+            return (self._span   == __value._span 
+                and self.string  == __value.string)
+        elif isinstance(__value, _re.Match):
+            return (self.start() == __value.start()
+                and self.end()   == __value.end()   
+                and self.string  == __value.string)
+        else:
+            raise TypeError('Invalid argument type')
 
 
 class RegexFlags(AbstractDataType):
