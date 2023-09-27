@@ -499,42 +499,10 @@ class Pattern(_Cachable):
 
     def split(self, string: str, maxsplit: int = 0, start: int = 0, end: int = None) -> list[str]:
         
-        
-        # time the re split
-        # start = timeit.timeit()
-        # for i in range(1000):
-        return self.sub('/\\', string, maxsplit).split('/\\')
+        matches = self.sub('/\\', string, maxsplit).split('/\\')
+        return [string] if matches is None else matches 
         
         
-        return self.sub('-||-', string, maxsplit).split('-||-')
-    
-        matches = list(self.finditer(string, start, end))
-        if not matches:
-                    return [string]
-                
-        start = timeit.timeit()
-        for _ in range(1000):
-        # If no matches, return the string in a list
-            
-
-            # Split the string at the match indices
-            splits = []
-            start = 0
-            for i, match in enumerate(matches):
-                if maxsplit and i >= maxsplit:
-                    break
-
-                splits.append(string[start:match.start()])
-                start = match.end()
-                
-            # Append the remaining part of the string
-            splits.append(string[start:])
-            
-        print('re split: {:4f}'.format(timeit.timeit() - start))    
-                
-        return splits
-
-
     def finditer(self, string: str, start: int = 0, end=None):
         """Implements the finditer method using custom implementation."""
         if end is None:
