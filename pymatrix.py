@@ -48,13 +48,6 @@ class PyMatrix(ListLike2D):
         self._pivots = None
         self._rref = None
 
-        # super().__init__(data, cols, fill)
-        # self._allnumeric = all(isinstance(x, (int, float)) for row in self.data for x in row)
-        # self._longest = max(len(str(x)) for row in self.data for x in row)
-        # self._zero_based = zero_based
-        # self._pivots = None
-        # self._rref = None
-
     def clone(self):
         data = self.clone_data()
         return PyMatrix(data)
@@ -297,14 +290,14 @@ class PyMatrix(ListLike2D):
         return self
 
     @index_adjuster
-    def row_div(self, i: int, val: (int, float)):
+    def row_div(self, i: int, val: int | float):
         """ divide row i by val """
         self.data[i] = [x / val for x in self.data[i]]
         return self
 
     @enforces_symbolic
     @index_adjuster
-    def row_add(self, i: int, j: int, factor: (int, float) = 1):
+    def row_add(self, i: int, j: int, factor: (int, float) = 1) -> PyMatrix:
         """ add row j to row i with factor """
         self.data[i] = [x + factor * y for x,
                         y in zip(self.data[i], self.data[j])]
@@ -572,7 +565,6 @@ class PyMatrix(ListLike2D):
 
 
 if __name__ == '__main__':
-    mat_symbolic = PyMatrix([[1, "2k", 3], [4, 5, 6], [7, 8, 9]])
 
     mat_numeric1 = PyMatrix([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
     mat_numeric2 = PyMatrix([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
@@ -587,29 +579,8 @@ if __name__ == '__main__':
     assert (mat_numeric1 == mat_numeric2)
     assert (mat_numeric1 == mat_num_clone)
 
-    # ensure arithmetic operations work
+    # # ensure arithmetic operations work
     assert (mat_numeric1 + mat_numeric2 == mat_numeric1 + mat_numeric1)
     assert (mat_numeric1 - mat_numeric2 == mat_numeric1 - mat_numeric1)
     assert (mat_numeric1 * mat_numeric2 == mat_numeric1 * mat_numeric1)
-
     assert (mat_numeric1 * 2 == mat_numeric1 + mat_numeric1)
-    mat_numeric1 += mat_numeric2
-    mat_numeric1 -= mat_numeric2
-
-    from sympy import Matrix as SymMatrix
-
-    sym_numeric1 = SymMatrix(mat_numeric1.data)
-    sym_numeric2 = SymMatrix(mat_numeric2.data)
-    sym_numeric1 += sym_numeric2
-    print(sym_numeric1)
-    rref = sym_numeric1.rref()
-    print(len(sym_numeric1))
-    from ti_converters import to_py_mat
-    print(to_py_mat(sym_numeric1))
-    # print(mat_numeric1)
-
-    # print(mat_symbolic._allnumeric)
-    # print(mat_numeric1 + mat_numeric2)
-    # matA = PyMatrix([[1,2],[3,4]])
-    # matB = PyMatrix([[5,-4],[9,-7]])
-    # matC = PyMatrix([[3,4],[0,1]])
