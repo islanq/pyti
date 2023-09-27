@@ -63,10 +63,10 @@ class Cachable:
     def __new__(cls, *args, **kwargs):
         cache = cls.cache()
         cache_key = (args, tuple(sorted(kwargs.items())))
-        cached_object = cache.get(cache_key)
+        cache_obj = cache.get(cache_key)
         # we have a cache hit
-        if cached_object is not None:
-            return cached_object
+        if cache_obj is not None:
+            return cache_obj
         # we have a cache miss
         else:
             obj = super().__new__(cls)
