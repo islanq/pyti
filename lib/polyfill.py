@@ -1,60 +1,48 @@
-import re
-from re import search, match, compile
+from wrappers import debug_in_out
+from re import compile
 
-_digit_pat = r'^(-)?\d+$'
-#_numeric_pat = r'^(-)?\d+(\.\d+)?$'
-_numeric_pat = r'^-?\d+(\.\d+)?$'
-_alpha_pat = r'^[a-zA-Z]+$'
-_alnum_pat = r'^(-)?[a-zA-Z0-9.]+$'
+_digit_str = r'^(-)?\d+$'
+# _numeric_pat = r'^(-)?\d+(\.\d+)?$'
+_numeric_str = r'^-?\d+(\.\d+)?$'
+_alpha_str = r'^[a-zA-Z]+$'
+_alnum_str = r'^(-)?[a-zA-Z0-9.]+$'
 
-_digit_re = compile(_digit_pat)
-_numeric_re = compile(_numeric_pat)
-_alpha_re = compile(_alpha_pat)
-_alnum_re = compile(_alnum_pat)
+_digit_pattern = compile(_digit_str)
+_numeric_pattern = compile(_numeric_str)
+_alpha_pattern = compile(_alpha_str)
+_alnum_pattern = compile(_alnum_str)
 
 
 def is_digit(s):
     s = str(s) if not isinstance(s, str) else s
-    
     try:
-        return re.match(_digit_re, s) is not None
+        return _digit_pattern.match(s) is not None
     except ValueError:
-        return match(_digit_re, s) is not None
-    finally:
-        
-        return match(_digit_pat, s) is not None
+        print('ValueError: is_digit() arg 1 must be str, int, float, or numeric')
 
 
 def is_numeric(s):
     s = str(s) if not isinstance(s, str) else s
     try:
-        return re.match(_numeric_re, s) is not None
+        return _numeric_pattern.match(s) is not None
     except ValueError:
-        print('default re.match failed: {}'.format(s))
-        return match(_numeric_re, s) is not None
-    finally:
-        print('is_numeric: Using custom re match in finally')
-        return re.match(_numeric_pat, s) is not None
+        print('ValueError: is_numeric() arg 1 must be str, int, float, or numeric')
 
 
 def is_alpha(s):
     s = str(s) if not isinstance(s, str) else s
     try:
-        return re.match(_alpha_re, s) is not None
+        return _alpha_pattern.match(s) is not None
     except ValueError:
-        return match(_alpha_re, s) is not None
-    finally:
-        return match(_alpha_pat, s) is not None
+        print('ValueError: is_alpha() arg 1 must be str, int, float, or numeric')
 
 
 def is_alnum(s):
     s = str(s) if not isinstance(s, str) else s
     try:
-        return re.match(_alnum_re, s) is not None
+        return _alnum_pattern.match(s) is not None
     except ValueError:
-        return match(_alnum_re, s) is not None
-    finally:
-        return match(_alnum_pat, s) is not None
+        print('ValueError: is_alnum() arg 1 must be str, int, float, or numeric')
 
 
 def reduce_quotes(text):
@@ -108,7 +96,7 @@ def create_varied_sequence(head: str, tail: str, sequence: str = ' ', max: int =
     return [head + sequence * i + tail for i in range(max)]
 
 
-def get_max_sequence(string: str, sequence: str=' ') -> int:
+def get_max_sequence(string: str, sequence: str = ' ') -> int:
     """_summary_
 
     Args:
@@ -130,8 +118,8 @@ def get_max_sequence(string: str, sequence: str=' ') -> int:
         return str_len
     if sequence == string:
         return 1
-    
-    
+
+
 def get_max_between(string: str, head: str, tail: str, pattern: str = ' ') -> int:
     """_summary_
 
@@ -146,29 +134,32 @@ def get_max_between(string: str, head: str, tail: str, pattern: str = ' ') -> in
     """
     head_len = len(head)
     tail_len = len(tail)
-    
+
     # Get all indices of head and tail substrings in the input string
-    head_indices = [i for i in range(len(string)) if string.startswith(head, i)]
-    tail_indices = [i for i in range(len(string)) if string.startswith(tail, i)]
-    
+    head_indices = [i for i in range(
+        len(string)) if string.startswith(head, i)]
+    tail_indices = [i for i in range(
+        len(string)) if string.startswith(tail, i)]
+
     max_len = 0
-    
+
     # Iterate over all head and tail pairs to find the longest substring between them
     for head_index in head_indices:
         for tail_index in tail_indices:
             if head_index + head_len < tail_index:
-                substring_between = string[head_index + head_len : tail_index]
-                
+                substring_between = string[head_index + head_len: tail_index]
+
                 # If a pattern is specified, check if it is contained in the substring
                 if pattern and pattern not in substring_between:
                     continue
-                
+
                 # Update max_len if the current substring is longer than the previously found substrings
                 max_len = max(max_len, len(substring_between))
-    
+
     return max_len
 
-def ensure_string(string: str, strip = False) -> str:
+
+def ensure_string(string: str, strip=False) -> str:
     """_summary_
 
     Args:
@@ -183,7 +174,6 @@ def ensure_string(string: str, strip = False) -> str:
         string = string.strip()
     return string
 
-from wrappers import debug_in_out
 
 @debug_in_out(False)
 def remove_all(text: str, *args):
@@ -197,8 +187,9 @@ def remove_all(text: str, *args):
         _type_: _description_
     """
     for arg in args:
-            text = text.replace(arg, '')
+        text = text.replace(arg, '')
     return text
+
 
 def map_replace(string: str, **replacement_map):
     string = ensure_string(string)
@@ -214,6 +205,3 @@ def map_replace(string: str, **replacement_map):
     for old, new in replacement_map.items():
         string = string.replace(old, new)
     return string
-
-
-
