@@ -279,18 +279,18 @@ class PyMatrix(ListLike2D):
     # region Row Operations
 
     @index_adjuster
-    def row_swap(self, i: int, j: int):
+    def row_swap(self, i: int, j: int) -> PyMatrix:
         self.data[i], self.data[j] = self.data[j], self.data[i]
         return self
 
     @index_adjuster
-    def row_mul(self, i: int, val: (int, float)):
+    def row_mul(self, i: int, val: (int, float)) -> PyMatrix:
         """ multiply row i by val """
         self.data[i] = [x * val for x in self.data[i]]
         return self
 
     @index_adjuster
-    def row_div(self, i: int, val: int | float):
+    def row_div(self, i: int, val: int | float) -> PyMatrix:
         """ divide row i by val """
         self.data[i] = [x / val for x in self.data[i]]
         return self
@@ -304,7 +304,7 @@ class PyMatrix(ListLike2D):
         return self
 
     @index_adjuster
-    def row_sub(self, i: int, j: int, factor: (int, float) = 1):
+    def row_sub(self, i: int, j: int, factor: (int, float) = 1) -> PyMatrix:
         """ subtract row j from row i with factor """
         self.data[i] = [x - factor * y for x,
                         y in zip(self.data[i], self.data[j])]
