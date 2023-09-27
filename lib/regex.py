@@ -356,7 +356,7 @@ class Match:
         return -1
 
     def __str__(self) -> str:
-        return "<rx.Match object; span=({}, {}), match='{}'>".format(self.start(), self.end(), self.string[self.start():self.end()])
+        return "<rx.Match object; span=({}, {}), match='{}'>".format(self.start(), self.end(), self.string[self.span().start:self.span().end])
 
     def __repr__(self) -> str:
         return self.__str__()
